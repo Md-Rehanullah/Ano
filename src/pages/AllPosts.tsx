@@ -207,6 +207,7 @@ const AllPosts = () => {
       if (error) throw error;
     } catch (error) {
       console.error('Error disliking post:', error);
+      setInteraction(postId, currentInteraction);
       updatePostLocally(postId, p => ({
         ...p,
         dislikes: p.dislikes - 1,
