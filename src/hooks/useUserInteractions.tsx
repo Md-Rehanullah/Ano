@@ -52,5 +52,9 @@ export const useUserInteractions = (postIds: string[]) => {
     fetchInteractions();
   }, [user, memoizedPostIds]);
 
-  return { interactions, loading };
+  const setInteraction = (postId: string, type: 'like' | 'dislike' | null) => {
+    setInteractions(prev => ({ ...prev, [postId]: type }));
+  };
+
+  return { interactions, loading, setInteraction };
 };
