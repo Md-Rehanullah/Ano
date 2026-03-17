@@ -174,6 +174,7 @@ const AllPosts = () => {
     } catch (error) {
       console.error('Error liking post:', error);
       // Revert on error
+      setInteraction(postId, currentInteraction);
       updatePostLocally(postId, p => ({
         ...p,
         likes: p.likes - 1,
