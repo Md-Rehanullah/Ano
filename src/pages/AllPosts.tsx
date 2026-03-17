@@ -195,6 +195,7 @@ const AllPosts = () => {
     if (currentInteraction === 'dislike') return;
 
     // Optimistic update
+    setInteraction(postId, 'dislike');
     updatePostLocally(postId, p => ({
       ...p,
       dislikes: p.dislikes + 1,
