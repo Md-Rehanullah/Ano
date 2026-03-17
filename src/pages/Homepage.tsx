@@ -185,167 +185,116 @@ const Homepage = () => {
     }
   };
 
-  // Handle like functionality with authentication check
+  const updatePostLocally = (postId: string, updater: (post: Post) => Post) => {
+    setPosts(prev => prev.map(p => p.id === postId ? updater(p) : p));
+  };
+
+  const updateAnswerLocally = (answerId: string, updater: (answer: Answer) => Answer) => {
+    setPosts(prev => prev.map(p => ({
+      ...p,
+      answers: p.answers.map(a => a.id === answerId ? updater(a) : a)
+    })));
+  };
+
   const handleLike = async (postId: string) => {
     if (!user) {
-      toast({
-        title: "Authentication required",
-        description: "Please sign in to like posts.",
-        variant: "destructive",
-      });
+      toast({ title: "Authentication required", description: "Please sign in to like posts.", variant: "destructive" });
       navigate('/auth');
       return;
     }
-
+    const currentInteraction = interactions[postId];
+    if (currentInteraction === 'like') return;
+    setInteraction(postId, 'like');
+    updatePostLocally(postId, p => ({
+      ...p,
+      likes: p.likes + 1,
+      dislikes: currentInteraction === 'dislike' ? p.dislikes - 1 : p.dislikes,
+    }));
     try {
-      const { error } = await supabase.rpc('increment_post_likes' as any, {
-        post_id: postId,
-        user_id: user.id
-      });
-
+      const { error } = await supabase.rpc('increment_post_likes' as any, { post_id: postId, user_id: user.id });
       if (error) throw error;
-
-      // Refresh posts to show updated counts
-      await fetchPosts();
-      
-      toast({
-        title: "Post liked!",
-        description: "Your interaction has been recorded.",
-      });
     } catch (error) {
       console.error('Error liking post:', error);
-      toast({
-        title: "Error",
-        description: "Failed to like post. Please try again.",
-        variant: "destructive",
-      });
+      setInteraction(postId, currentInteraction);
+      updatePostLocally(postId, p => ({
+        ...p,
+        likes: p.likes - 1,
+        dislikes: currentInteraction === 'dislike' ? p.dislikes + 1 : p.dislikes,
+      }));
+      toast({ title: "Error", description: "Failed to like post.", variant: "destructive" });
     }
   };
 
-  // Handle dislike functionality with authentication check
   const handleDislike = async (postId: string) => {
     if (!user) {
-      toast({
-        title: "Authentication required",
-        description: "Please sign in to dislike posts.",
-        variant: "destructive",
-      });
+      toast({ title: "Authentication required", description: "Please sign in to dislike posts.", variant: "destructive" });
       navigate('/auth');
       return;
     }
-
+    const currentInteraction = interactions[postId];
+    if (currentInteraction === 'dislike') return;
+    setInteraction(postId, 'dislike');
+    updatePostLocally(postId, p => ({
+      ...p,
+      dislikes: p.dislikes + 1,
+      likes: currentInteraction === 'like' ? p.likes - 1 : p.likes,
+    }));
     try {
-      const { error } = await supabase.rpc('increment_post_dislikes' as any, {
-        post_id: postId,
-        user_id: user.id
-      });
-
+      const { error } = await supabase.rpc('increment_post_dislikes' as any, { post_id: postId, user_id: user.id });
       if (error) throw error;
-
-      // Refresh posts to show updated counts
-      await fetchPosts();
-      
-      toast({
-        title: "Post disliked!",
-        description: "Your interaction has been recorded.",
-      });
     } catch (error) {
       console.error('Error disliking post:', error);
-      toast({
-        title: "Error",
-        description: "Failed to dislike post. Please try again.",
-        variant: "destructive",
-      });
+      setInteraction(postId, currentInteraction);
+      updatePostLocally(postId, p => ({
+        ...p,
+        dislikes: p.dislikes - 1,
+        likes: currentInteraction === 'like' ? p.likes + 1 : p.likes,
+      }));
+      toast({ title: "Error", description: "Failed to dislike post.", variant: "destructive" });
     }
   };
 
   const handleReport = (postId: string, reason: string) => {
     if (!user) {
-      toast({
-        title: "Authentication required",
-        description: "Please sign in to report posts.",
-        variant: "destructive",
-      });
+      toast({ title: "Authentication required", description: "Please sign in to report posts.", variant: "destructive" });
       navigate('/auth');
       return;
     }
-    
     console.log('Report submitted for post:', postId, 'Reason:', reason);
-    toast({
-      title: "Report submitted",
-      description: "Thank you for helping keep our community safe.",
-    });
+    toast({ title: "Report submitted", description: "Thank you for helping keep our community safe." });
   };
 
   const handleAnswerLike = async (answerId: string) => {
     if (!user) {
-      toast({
-        title: "Authentication required",
-        description: "Please sign in to like answers.",
-        variant: "destructive",
-      });
+      toast({ title: "Authentication required", description: "Please sign in to like answers.", variant: "destructive" });
       navigate('/auth');
       return;
     }
-
+    updateAnswerLocally(answerId, a => ({ ...a, likes: a.likes + 1 }));
     try {
-      const { error } = await supabase.rpc('increment_answer_likes', {
-        answer_id: answerId,
-        user_id: user.id
-      });
-
+      const { error } = await supabase.rpc('increment_answer_likes', { answer_id: answerId, user_id: user.id });
       if (error) throw error;
-
-      // Refresh posts to show updated counts
-      await fetchPosts();
-      
-      toast({
-        title: "Answer liked!",
-        description: "Your interaction has been recorded.",
-      });
     } catch (error) {
       console.error('Error liking answer:', error);
-      toast({
-        title: "Error",
-        description: "Failed to like answer. Please try again.",
-        variant: "destructive",
-      });
+      updateAnswerLocally(answerId, a => ({ ...a, likes: a.likes - 1 }));
+      toast({ title: "Error", description: "Failed to like answer.", variant: "destructive" });
     }
   };
 
   const handleAnswerDislike = async (answerId: string) => {
     if (!user) {
-      toast({
-        title: "Authentication required",
-        description: "Please sign in to dislike answers.",
-        variant: "destructive",
-      });
+      toast({ title: "Authentication required", description: "Please sign in to dislike answers.", variant: "destructive" });
       navigate('/auth');
       return;
     }
-
+    updateAnswerLocally(answerId, a => ({ ...a, dislikes: a.dislikes + 1 }));
     try {
-      const { error } = await supabase.rpc('increment_answer_dislikes', {
-        answer_id: answerId,
-        user_id: user.id
-      });
-
+      const { error } = await supabase.rpc('increment_answer_dislikes', { answer_id: answerId, user_id: user.id });
       if (error) throw error;
-
-      // Refresh posts to show updated counts
-      await fetchPosts();
-      
-      toast({
-        title: "Answer disliked!",
-        description: "Your interaction has been recorded.",
-      });
     } catch (error) {
       console.error('Error disliking answer:', error);
-      toast({
-        title: "Error",
-        description: "Failed to dislike answer. Please try again.",
-        variant: "destructive",
-      });
+      updateAnswerLocally(answerId, a => ({ ...a, dislikes: a.dislikes - 1 }));
+      toast({ title: "Error", description: "Failed to dislike answer.", variant: "destructive" });
     }
   };
 
