@@ -46,7 +46,7 @@ const Homepage = () => {
   
   // Get user interactions for all posts
   const postIds = posts.map(post => post.id);
-  const { interactions } = useUserInteractions(postIds);
+  const { interactions, setInteraction } = useUserInteractions(postIds);
 
   useEffect(() => {
     fetchPosts();
