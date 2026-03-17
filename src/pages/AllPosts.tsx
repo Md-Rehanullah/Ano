@@ -161,6 +161,7 @@ const AllPosts = () => {
     if (currentInteraction === 'like') return;
 
     // Optimistic update
+    setInteraction(postId, 'like');
     updatePostLocally(postId, p => ({
       ...p,
       likes: p.likes + 1,
