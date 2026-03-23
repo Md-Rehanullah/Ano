@@ -91,7 +91,7 @@ const Auth = () => {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/`,
+          emailRedirectTo: 'https://anonymous-insight.lovable.app/',
           data: {
             display_name: displayName || email.split('@')[0]
           }
