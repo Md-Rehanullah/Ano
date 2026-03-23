@@ -3,26 +3,144 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AtlasTHOUGHT - Ask Anything, Share Everything</title>
-    <meta name="description" content="A place where curiosity meets knowledge. Ask questions, share insights, and connect with others anonymously. No registration required." />
+    <title>GnoSYS - Smart Minds</title>
+    <meta name="description" content="GnoSYS — A place where smart minds connect. Ask questions, share insights, and grow together." />
     <meta name="author" content="Rehan and Company" />
-    <meta name="keywords" content="anonymous questions, Q&A platform, knowledge sharing, community, ask questions" />
+    <meta name="keywords" content="GnoSYS, smart minds, Q&A platform, knowledge sharing, community" />
+    <link rel="icon" type="image/png" href="/images/gnosys-logo.png" />
 
-    <meta property="og:title" content="AtlasTHOUGHT - Ask Anything, Share Everything" />
-    <meta property="og:description" content="A place where curiosity meets knowledge. Ask questions, share insights, and connect with others anonymously." />
+    <meta property="og:title" content="GnoSYS - Smart Minds" />
+    <meta property="og:description" content="A place where smart minds connect. Ask questions, share insights, and grow together." />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta property="og:image" content="/images/gnosys-logo.png" />
 
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@rehan" />
-    <meta name="twitter:title" content="AtlasTHOUGHT" />
-    <parameter name="twitter:description" content="Ask questions and share knowledge anonymously" />
-    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta name="twitter:title" content="GnoSYS - Smart Minds" />
+    <meta name="twitter:description" content="A place where smart minds connect." />
+    <meta name="twitter:image" content="/images/gnosys-logo.png" />
+
+    <style>
+      #splash-screen {
+        position: fixed;
+        inset: 0;
+        z-index: 99999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(160deg, #0f1729 0%, #1a2744 40%, #243b6a 70%, #1a2744 100%);
+        transition: opacity 0.5s ease-out;
+        overflow: hidden;
+      }
+      #splash-screen.fade-out {
+        opacity: 0;
+        pointer-events: none;
+      }
+      #splash-screen::before {
+        content: '';
+        position: absolute;
+        width: 600px;
+        height: 600px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 70%);
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        animation: pulse-glow 3s ease-in-out infinite;
+      }
+      .splash-logo {
+        width: 120px;
+        height: 120px;
+        border-radius: 24px;
+        object-fit: cover;
+        margin-bottom: 28px;
+        position: relative;
+        z-index: 1;
+        animation: logo-appear 0.8s ease-out forwards;
+        box-shadow: 0 8px 32px rgba(99,102,241,0.3);
+      }
+      .splash-title {
+        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        font-size: 38px;
+        font-weight: 800;
+        letter-spacing: 6px;
+        color: #e8ecf4;
+        margin: 0;
+        position: relative;
+        z-index: 1;
+        animation: title-appear 0.8s 0.3s ease-out both;
+      }
+      .splash-tagline {
+        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        font-size: 15px;
+        font-weight: 400;
+        letter-spacing: 4px;
+        color: rgba(165,180,210,0.8);
+        margin: 8px 0 0;
+        position: relative;
+        z-index: 1;
+        animation: title-appear 0.8s 0.5s ease-out both;
+      }
+      .splash-loader {
+        margin-top: 48px;
+        width: 40px;
+        height: 3px;
+        background: rgba(99,102,241,0.2);
+        border-radius: 3px;
+        overflow: hidden;
+        position: relative;
+        z-index: 1;
+        animation: title-appear 0.8s 0.7s ease-out both;
+      }
+      .splash-loader::after {
+        content: '';
+        position: absolute;
+        height: 100%;
+        width: 60%;
+        background: linear-gradient(90deg, #6366f1, #818cf8);
+        border-radius: 3px;
+        animation: loader-slide 1.2s ease-in-out infinite;
+      }
+      @keyframes pulse-glow {
+        0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
+        50% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+      }
+      @keyframes logo-appear {
+        from { opacity: 0; transform: scale(0.8) translateY(20px); }
+        to { opacity: 1; transform: scale(1) translateY(0); }
+      }
+      @keyframes title-appear {
+        from { opacity: 0; transform: translateY(12px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      @keyframes loader-slide {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(200%); }
+      }
+    </style>
   </head>
 
   <body>
+    <!-- Splash Screen -->
+    <div id="splash-screen">
+      <img src="/images/gnosys-logo.png" alt="GnoSYS" class="splash-logo" />
+      <p class="splash-title">GNOSYS</p>
+      <p class="splash-tagline">SMART MINDS</p>
+      <div class="splash-loader"></div>
+    </div>
 
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      window.addEventListener('load', function() {
+        setTimeout(function() {
+          var splash = document.getElementById('splash-screen');
+          if (splash) {
+            splash.classList.add('fade-out');
+            setTimeout(function() { splash.remove(); }, 500);
+          }
+        }, 2200);
+      });
+    </script>
   </body>
 </html>
