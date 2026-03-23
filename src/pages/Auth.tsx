@@ -91,7 +91,7 @@ const Auth = () => {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/`,
+          emailRedirectTo: 'https://anonymous-insight.lovable.app/',
           data: {
             display_name: displayName || email.split('@')[0]
           }
@@ -171,7 +171,7 @@ const Auth = () => {
     setLoading(true);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth`,
+        redirectTo: 'https://anonymous-insight.lovable.app/auth',
       });
 
       if (error) {
@@ -204,7 +204,7 @@ const Auth = () => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: `${window.location.origin}/`,
+          redirectTo: 'https://anonymous-insight.lovable.app/',
         },
       });
 
