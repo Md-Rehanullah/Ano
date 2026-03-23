@@ -6,8 +6,8 @@ const config: CapacitorConfig = {
   webDir: 'dist',
   plugins: {
     SplashScreen: {
-      launchShowDuration: 2000,
-      backgroundColor: '#6366f1',
+      launchShowDuration: 0,
+      backgroundColor: '#0f1729',
       showSpinner: false
     }
   }
