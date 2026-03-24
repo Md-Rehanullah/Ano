@@ -1,29 +1,50 @@
 import { Link, useLocation } from "react-router-dom";
-import { Moon, Sun, Github, Instagram, Facebook, Twitter, ArrowUp, LogIn, LogOut, User, Menu, X, CheckCircle } from "lucide-react";
+import { Moon, Sun, LogIn, LogOut, User, Menu, ArrowUp, CheckCircle, Home, FileText, Info, Mail, Users, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/ThemeProvider";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
-import { useIsMobile } from "@/hooks/use-mobile";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 
 interface LayoutProps {
   children: React.ReactNode;
 }
+
+const isNativeApp = (): boolean => {
+  return !!(window as any).Capacitor?.isNativePlatform?.() || !!(window as any).Capacitor?.isPluginAvailable;
+};
+
+const navItems = [
+  { to: "/", label: "Home", icon: Home },
+  { to: "/all-posts", label: "All Posts", icon: FileText },
+  { to: "/about", label: "About", icon: Info },
+  { to: "/contact", label: "Contact", icon: Mail },
+  { to: "/collaborate", label: "Collaborate", icon: Users },
+];
 
 const Layout = ({ children }: LayoutProps) => {
   const location = useLocation();
   const { theme, setTheme } = useTheme();
   const { user, signOut } = useAuth();
   const [showScrollTop, setShowScrollTop] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const isMobile = useIsMobile();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [native, setNative] = useState(false);
+
+  useEffect(() => {
+    setNative(isNativeApp());
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
       setShowScrollTop(window.scrollY > 300);
     };
-
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
@@ -35,98 +56,106 @@ const Layout = ({ children }: LayoutProps) => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-40 w-full border-b bg-gradient-card backdrop-blur-sm shadow-card">
-        <div className="container mx-auto px-4 py-4">
+      <header className="sticky top-0 z-40 w-full border-b bg-card/95 backdrop-blur-sm shadow-card">
+        <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
-            <Link to="/" className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent hover:opacity-80 transition-opacity">
-              AtlasTHOUGHT
-            </Link>
-            
-            <nav className="hidden md:flex items-center space-x-6">
-              <Link 
-                to="/" 
-                className={cn(
-                  "text-sm font-medium transition-colors hover:text-primary",
-                  location.pathname === "/" ? "text-primary" : "text-muted-foreground"
-                )}
-              >
-                Home
-              </Link>
-              <Link 
-                to="/all-posts" 
-                className={cn(
-                  "text-sm font-medium transition-colors hover:text-primary",
-                  location.pathname === "/all-posts" ? "text-primary" : "text-muted-foreground"
-                )}
-              >
-                All Posts
-              </Link>
-              <Link 
-                to="/about" 
-                className={cn(
-                  "text-sm font-medium transition-colors hover:text-primary",
-                  location.pathname === "/about" ? "text-primary" : "text-muted-foreground"
-                )}
-              >
-                About
-              </Link>
-              <Link 
-                to="/contact" 
-                className={cn(
-                  "text-sm font-medium transition-colors hover:text-primary",
-                  location.pathname === "/contact" ? "text-primary" : "text-muted-foreground"
-                )}
-              >
-                Contact
-              </Link>
-              <Link 
-                to="/collaborate" 
-                className={cn(
-                  "text-sm font-medium transition-colors hover:text-primary",
-                  location.pathname === "/collaborate" ? "text-primary" : "text-muted-foreground"
-                )}
-              >
-                Collaborate
-              </Link>
-            </nav>
+            {/* Left: Hamburger + Logo */}
+            <div className="flex items-center space-x-3">
+              <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-9 w-9 p-0">
+                    <Menu className="h-5 w-5" />
+                    <span className="sr-only">Open menu</span>
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-72 bg-sidebar text-sidebar-foreground p-0">
+                  <SheetHeader className="p-6 pb-4 border-b border-sidebar-border">
+                    <SheetTitle className="text-lg font-bold text-sidebar-foreground">Bridge</SheetTitle>
+                  </SheetHeader>
+                  <nav className="p-4 space-y-1">
+                    {navItems.map((item) => (
+                      <Link
+                        key={item.to}
+                        to={item.to}
+                        onClick={() => setSidebarOpen(false)}
+                        className={cn(
+                          "flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                          location.pathname === item.to
+                            ? "bg-sidebar-accent text-sidebar-primary"
+                            : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                        )}
+                      >
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.label}</span>
+                      </Link>
+                    ))}
 
-            {/* Mobile Menu Button */}
-            {isMobile && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="md:hidden h-9 w-9 p-0"
-              >
-                {mobileMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
-              </Button>
-            )}
+                    {/* Play Store download — web only */}
+                    {!native && (
+                      <a
+                        href="https://play.google.com/store/apps/details?id=app.lovable.4a547dd56e2d482a9fd193145e27d70c"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors"
+                      >
+                        <Download className="h-4 w-4" />
+                        <span>Get the App</span>
+                      </a>
+                    )}
+                  </nav>
 
+                  {/* Auth section at bottom */}
+                  <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-sidebar-border">
+                    {user ? (
+                      <div className="space-y-2">
+                        <Link
+                          to="/profile"
+                          onClick={() => setSidebarOpen(false)}
+                          className="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors"
+                        >
+                          <User className="h-4 w-4" />
+                          <span>Profile</span>
+                        </Link>
+                        <button
+                          onClick={() => { signOut(); setSidebarOpen(false); }}
+                          className="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors w-full"
+                        >
+                          <LogOut className="h-4 w-4" />
+                          <span>Sign Out</span>
+                        </button>
+                      </div>
+                    ) : (
+                      <Link
+                        to="/auth"
+                        onClick={() => setSidebarOpen(false)}
+                        className="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors"
+                      >
+                        <LogIn className="h-4 w-4" />
+                        <span>Sign In</span>
+                      </Link>
+                    )}
+                  </div>
+                </SheetContent>
+              </Sheet>
+
+              <Link to="/" className="text-xl font-bold text-primary hover:opacity-80 transition-opacity">
+                Bridge
+              </Link>
+            </div>
+
+            {/* Right: auth + theme */}
             <div className="flex items-center space-x-2">
               {user ? (
-                <div className="flex items-center space-x-3">
-                  <Link 
-                    to="/profile"
-                    className="flex items-center space-x-2 bg-primary/10 px-3 py-1.5 rounded-full border border-primary/20 hover:bg-primary/20 transition-colors"
-                  >
-                    <div className="relative">
-                      <User className="h-4 w-4 text-primary" />
-                      <CheckCircle className="absolute -top-1 -right-1 h-2.5 w-2.5 text-green-500 fill-current" />
-                    </div>
-                    <span className="text-sm font-medium text-primary hidden sm:inline">
-                      Profile
-                    </span>
-                  </Link>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={signOut}
-                    className="flex items-center space-x-1"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    <span className="hidden sm:inline">Sign Out</span>
-                  </Button>
-                </div>
+                <Link
+                  to="/profile"
+                  className="flex items-center space-x-2 bg-primary/10 px-3 py-1.5 rounded-full border border-primary/20 hover:bg-primary/20 transition-colors"
+                >
+                  <div className="relative">
+                    <User className="h-4 w-4 text-primary" />
+                    <CheckCircle className="absolute -top-1 -right-1 h-2.5 w-2.5 text-green-500 fill-current" />
+                  </div>
+                  <span className="text-sm font-medium text-primary hidden sm:inline">Profile</span>
+                </Link>
               ) : (
                 <Link to="/auth">
                   <Button variant="outline" size="sm" className="flex items-center space-x-1">
@@ -135,7 +164,6 @@ const Layout = ({ children }: LayoutProps) => {
                   </Button>
                 </Link>
               )}
-              
               <Button
                 variant="ghost"
                 size="sm"
@@ -149,115 +177,12 @@ const Layout = ({ children }: LayoutProps) => {
             </div>
           </div>
         </div>
-
-        {/* Mobile Menu */}
-        {mobileMenuOpen && isMobile && (
-          <div className="md:hidden border-t bg-background/95 backdrop-blur-sm">
-            <nav className="container mx-auto px-4 py-4 space-y-3">
-              <Link 
-                to="/" 
-                onClick={() => setMobileMenuOpen(false)}
-                className={cn(
-                  "block text-sm font-medium py-2 transition-colors hover:text-primary",
-                  location.pathname === "/" ? "text-primary" : "text-muted-foreground"
-                )}
-              >
-                Home
-              </Link>
-              <Link 
-                to="/all-posts" 
-                onClick={() => setMobileMenuOpen(false)}
-                className={cn(
-                  "block text-sm font-medium py-2 transition-colors hover:text-primary",
-                  location.pathname === "/all-posts" ? "text-primary" : "text-muted-foreground"
-                )}
-              >
-                All Posts
-              </Link>
-              <Link 
-                to="/about" 
-                onClick={() => setMobileMenuOpen(false)}
-                className={cn(
-                  "block text-sm font-medium py-2 transition-colors hover:text-primary",
-                  location.pathname === "/about" ? "text-primary" : "text-muted-foreground"
-                )}
-              >
-                About
-              </Link>
-              <Link 
-                to="/contact" 
-                onClick={() => setMobileMenuOpen(false)}
-                className={cn(
-                  "block text-sm font-medium py-2 transition-colors hover:text-primary",
-                  location.pathname === "/contact" ? "text-primary" : "text-muted-foreground"
-                )}
-              >
-                Contact
-              </Link>
-              <Link 
-                to="/collaborate" 
-                onClick={() => setMobileMenuOpen(false)}
-                className={cn(
-                  "block text-sm font-medium py-2 transition-colors hover:text-primary",
-                  location.pathname === "/collaborate" ? "text-primary" : "text-muted-foreground"
-                )}
-              >
-                Collaborate
-              </Link>
-            </nav>
-          </div>
-        )}
       </header>
 
       {/* Main Content */}
       <main className="flex-1">
         {children}
       </main>
-
-      {/* Footer */}
-      <footer className="border-t bg-gradient-card mt-16">
-        <div className="container mx-auto px-4 py-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div>
-              <h3 className="font-semibold text-lg mb-4 bg-gradient-primary bg-clip-text text-transparent">
-                AtlasTHOUGHT
-              </h3>
-              <p className="text-sm text-muted-foreground">
-                A place where anyone can ask questions, share knowledge, and connect with others anonymously.
-              </p>
-            </div>
-            
-            <div>
-              <h4 className="font-medium mb-4">Follow Us</h4>
-              <div className="flex space-x-4">
-                <a href="https://github.com/rehan" className="text-muted-foreground hover:text-primary transition-colors">
-                  <Github className="h-5 w-5" />
-                </a>
-                <a href="https://instagram.com/rehan" className="text-muted-foreground hover:text-primary transition-colors">
-                  <Instagram className="h-5 w-5" />
-                </a>
-                <a href="https://facebook.com/rehan" className="text-muted-foreground hover:text-primary transition-colors">
-                  <Facebook className="h-5 w-5" />
-                </a>
-                <a href="https://twitter.com/rehan" className="text-muted-foreground hover:text-primary transition-colors">
-                  <Twitter className="h-5 w-5" />
-                </a>
-              </div>
-            </div>
-            
-            <div>
-              <h4 className="font-medium mb-4">About</h4>
-              <p className="text-sm text-muted-foreground">
-                Created by Rehan and Company, established in 2095.
-              </p>
-            </div>
-          </div>
-          
-          <div className="border-t mt-8 pt-8 text-center text-sm text-muted-foreground">
-            <p>&copy; 2095 Rehan and Company. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
 
       {/* Scroll to Top Button */}
       <Button
