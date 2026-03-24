@@ -9,10 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
-const categories = [
-  "Education", "Entertainment", "Sports", "News", "Technology",
-  "Health", "Science", "Politics", "Business", "Arts", "Travel", "Food", "Other"
-];
+const categories = ["General", "Technology", "Education", "Lifestyle", "Other"];
 
 interface FloatingCreatePostButtonProps {
   onCreatePost: (post: { title: string; description: string; category: string; imageUrl?: string }) => void;
@@ -23,15 +20,13 @@ const FloatingCreatePostButton = ({ onCreatePost }: FloatingCreatePostButtonProp
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [category, setCategory] = useState("");
+  const [category, setCategory] = useState("General");
   const [imageUrl, setImageUrl] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
-    const handleScroll = () => {
-      setIsVisible(window.scrollY > 900);
-    };
+    const handleScroll = () => { setIsVisible(window.scrollY > 900); };
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
@@ -40,7 +35,7 @@ const FloatingCreatePostButton = ({ onCreatePost }: FloatingCreatePostButtonProp
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) { toast({ title: "Invalid file", variant: "destructive" }); return; }
-    if (file.size > 5 * 1024 * 1024) { toast({ title: "File too large", description: "Max 5MB.", variant: "destructive" }); return; }
+    if (file.size > 5 * 1024 * 1024) { toast({ title: "File too large", variant: "destructive" }); return; }
     setIsUploading(true);
     try {
       const fileExt = file.name.split('.').pop();
@@ -55,12 +50,12 @@ const FloatingCreatePostButton = ({ onCreatePost }: FloatingCreatePostButtonProp
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !description.trim() || !category) {
-      toast({ title: "Missing information", description: "Please fill all required fields.", variant: "destructive" });
+    if (!title.trim() || !description.trim()) {
+      toast({ title: "Missing information", variant: "destructive" });
       return;
     }
     onCreatePost({ title: title.trim(), description: description.trim(), category, imageUrl: imageUrl.trim() || undefined });
-    setTitle(""); setDescription(""); setCategory(""); setImageUrl("");
+    setTitle(""); setDescription(""); setCategory("General"); setImageUrl("");
     setIsDialogOpen(false);
   };
 
@@ -68,19 +63,12 @@ const FloatingCreatePostButton = ({ onCreatePost }: FloatingCreatePostButtonProp
 
   return (
     <>
-      <Button
-        onClick={() => setIsDialogOpen(true)}
-        className="fixed bottom-20 right-6 z-50 h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 p-0 animate-in fade-in zoom-in"
-        aria-label="Create a new post"
-      >
+      <Button onClick={() => setIsDialogOpen(true)} className="fixed bottom-20 right-6 z-50 h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 p-0 animate-in fade-in zoom-in" aria-label="Create a new post">
         <PenSquare className="h-6 w-6" />
       </Button>
-
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Create New Post</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>Create New Post</DialogTitle></DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="fab-title">Title/Heading *</Label>
@@ -92,12 +80,10 @@ const FloatingCreatePostButton = ({ onCreatePost }: FloatingCreatePostButtonProp
               <div className="text-xs text-muted-foreground text-right">{description.length}/1000</div>
             </div>
             <div className="space-y-2">
-              <Label>Category *</Label>
+              <Label>Category</Label>
               <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger>
-                <SelectContent>
-                  {categories.map((cat) => (<SelectItem key={cat} value={cat}>{cat}</SelectItem>))}
-                </SelectContent>
+                <SelectTrigger><SelectValue placeholder="General" /></SelectTrigger>
+                <SelectContent>{categories.map((cat) => (<SelectItem key={cat} value={cat}>{cat}</SelectItem>))}</SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
