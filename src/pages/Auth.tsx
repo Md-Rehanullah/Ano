@@ -78,7 +78,7 @@ const Auth = () => {
     if (!email) { toast({ title: "Error", description: "Please enter your email", variant: "destructive" }); return; }
     setLoading(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: 'https://anonymous-insight.lovable.app/auth' });
+      const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + '/auth' });
       if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
       else { toast({ title: "Check your email", description: "We've sent you a password reset link." }); setShowForgotPassword(false); }
     } catch { toast({ title: "Error", variant: "destructive" }); }
