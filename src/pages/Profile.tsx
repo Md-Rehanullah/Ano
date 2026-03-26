@@ -355,7 +355,7 @@ const Profile = () => {
                 <Card className="p-8 text-center">
                   <MessageCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                   <p className="text-muted-foreground">
-                    You haven't answered any posts yet.
+                    You haven't commented on any posts yet.
                   </p>
                 </Card>
               ) : (
