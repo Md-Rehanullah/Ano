@@ -54,7 +54,7 @@ const Auth = () => {
     try {
       const { error } = await supabase.auth.signUp({
         email, password,
-        options: { emailRedirectTo: 'https://anonymous-insight.lovable.app/', data: { display_name: displayName || email.split('@')[0] } }
+        options: { emailRedirectTo: window.location.origin + '/', data: { display_name: displayName || email.split('@')[0] } }
       });
       if (error) toast({ title: "Sign up failed", description: error.message, variant: "destructive" });
       else toast({ title: "Check your email", description: "We've sent you a confirmation link." });
