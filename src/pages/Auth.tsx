@@ -54,7 +54,7 @@ const Auth = () => {
     try {
       const { error } = await supabase.auth.signUp({
         email, password,
-        options: { emailRedirectTo: 'https://anonymous-insight.lovable.app/', data: { display_name: displayName || email.split('@')[0] } }
+        options: { emailRedirectTo: window.location.origin + '/', data: { display_name: displayName || email.split('@')[0] } }
       });
       if (error) toast({ title: "Sign up failed", description: error.message, variant: "destructive" });
       else toast({ title: "Check your email", description: "We've sent you a confirmation link." });
@@ -78,7 +78,7 @@ const Auth = () => {
     if (!email) { toast({ title: "Error", description: "Please enter your email", variant: "destructive" }); return; }
     setLoading(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: 'https://anonymous-insight.lovable.app/auth' });
+      const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + '/auth' });
       if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
       else { toast({ title: "Check your email", description: "We've sent you a password reset link." }); setShowForgotPassword(false); }
     } catch { toast({ title: "Error", variant: "destructive" }); }
@@ -88,7 +88,7 @@ const Auth = () => {
   const handleSocialLogin = async (provider: 'google' | 'github') => {
     setSocialLoading(provider);
     try {
-      const { error } = await supabase.auth.signInWithOAuth({ provider, options: { redirectTo: 'https://anonymous-insight.lovable.app/' } });
+      const { error } = await supabase.auth.signInWithOAuth({ provider, options: { redirectTo: window.location.origin + '/' } });
       if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
     } catch { toast({ title: "Error", variant: "destructive" }); }
     finally { setSocialLoading(null); }
