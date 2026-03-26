@@ -88,7 +88,7 @@ const Auth = () => {
   const handleSocialLogin = async (provider: 'google' | 'github') => {
     setSocialLoading(provider);
     try {
-      const { error } = await supabase.auth.signInWithOAuth({ provider, options: { redirectTo: 'https://anonymous-insight.lovable.app/' } });
+      const { error } = await supabase.auth.signInWithOAuth({ provider, options: { redirectTo: window.location.origin + '/' } });
       if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
     } catch { toast({ title: "Error", variant: "destructive" }); }
     finally { setSocialLoading(null); }
