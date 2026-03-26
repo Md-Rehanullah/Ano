@@ -312,7 +312,7 @@ const Profile = () => {
         <Tabs defaultValue="posts" className="space-y-6">
           <TabsList className="grid w-full max-w-lg grid-cols-3">
             <TabsTrigger value="posts">My Posts</TabsTrigger>
-            <TabsTrigger value="answers">My Answers</TabsTrigger>
+            <TabsTrigger value="answers">My Comments</TabsTrigger>
             <TabsTrigger value="settings" className="flex items-center gap-1">
               <Settings className="h-4 w-4" />
               Settings
