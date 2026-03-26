@@ -90,6 +90,35 @@ export type Database = {
           },
         ]
       }
+      bookmarks: {
+        Row: {
+          created_at: string
+          id: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookmarks_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       posts: {
         Row: {
           category: string
@@ -102,6 +131,8 @@ export type Database = {
           title: string
           updated_at: string
           user_id: string | null
+          video_url: string | null
+          views: number
         }
         Insert: {
           category: string
@@ -114,6 +145,8 @@ export type Database = {
           title: string
           updated_at?: string
           user_id?: string | null
+          video_url?: string | null
+          views?: number
         }
         Update: {
           category?: string
@@ -126,6 +159,8 @@ export type Database = {
           title?: string
           updated_at?: string
           user_id?: string | null
+          video_url?: string | null
+          views?: number
         }
         Relationships: []
       }
@@ -152,6 +187,62 @@ export type Database = {
           display_name?: string | null
           id?: string
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      reports: {
+        Row: {
+          created_at: string
+          id: string
+          post_id: string
+          reason: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_id: string
+          reason: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_id?: string
+          reason?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reports_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_guide_seen: {
+        Row: {
+          id: string
+          seen_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          seen_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          seen_at?: string
           user_id?: string
         }
         Relationships: []
@@ -206,6 +297,7 @@ export type Database = {
       increment_post_likes:
         | { Args: { post_id: string }; Returns: undefined }
         | { Args: { post_id: string; user_id: string }; Returns: undefined }
+      increment_post_views: { Args: { p_post_id: string }; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
