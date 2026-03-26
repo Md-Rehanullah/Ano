@@ -297,7 +297,7 @@ const Profile = () => {
                 </Badge>
                 <Badge variant="secondary" className="flex items-center gap-1 px-3 py-1">
                   <MessageCircle className="h-3 w-3" />
-                  {stats.totalAnswers} Answers
+                  {stats.totalAnswers} Comments
                 </Badge>
                 <Badge variant="secondary" className="flex items-center gap-1 px-3 py-1">
                   <ThumbsUp className="h-3 w-3" />
