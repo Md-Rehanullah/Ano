@@ -364,7 +364,7 @@ const Profile = () => {
                     <div className="space-y-3">
                       <div className="flex items-start justify-between">
                         <p className="text-sm text-muted-foreground">
-                          Answered on: <span className="font-medium text-foreground">{answer.post.title}</span>
+                          Commented on: <span className="font-medium text-foreground">{answer.post.title}</span>
                         </p>
                         <span className="text-xs text-muted-foreground flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
