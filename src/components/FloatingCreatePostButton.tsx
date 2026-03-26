@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { PenSquare, Upload, X, Loader2 } from "lucide-react";
+import { PenSquare, Upload, X, Loader2, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 const categories = ["General", "Technology", "Education", "Lifestyle", "Other"];
 
 interface FloatingCreatePostButtonProps {
-  onCreatePost: (post: { title: string; description: string; category: string; imageUrl?: string }) => void;
+  onCreatePost: (post: { title: string; description: string; category: string; imageUrl?: string; videoUrl?: string }) => void;
 }
 
 const FloatingCreatePostButton = ({ onCreatePost }: FloatingCreatePostButtonProps) => {
@@ -22,11 +22,13 @@ const FloatingCreatePostButton = ({ onCreatePost }: FloatingCreatePostButtonProp
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("General");
   const [imageUrl, setImageUrl] = useState("");
+  const [videoUrl, setVideoUrl] = useState("");
   const [isUploading, setIsUploading] = useState(false);
+  const [isUploadingVideo, setIsUploadingVideo] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
-    const handleScroll = () => { setIsVisible(window.scrollY > 900); };
+    const handleScroll = () => setIsVisible(window.scrollY > 900);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
@@ -38,8 +40,7 @@ const FloatingCreatePostButton = ({ onCreatePost }: FloatingCreatePostButtonProp
     if (file.size > 5 * 1024 * 1024) { toast({ title: "File too large", variant: "destructive" }); return; }
     setIsUploading(true);
     try {
-      const fileExt = file.name.split('.').pop();
-      const filePath = `${Math.random()}.${fileExt}`;
+      const filePath = `${Math.random()}.${file.name.split('.').pop()}`;
       const { error } = await supabase.storage.from('post-images').upload(filePath, file);
       if (error) throw error;
       const { data: { publicUrl } } = supabase.storage.from('post-images').getPublicUrl(filePath);
@@ -48,14 +49,27 @@ const FloatingCreatePostButton = ({ onCreatePost }: FloatingCreatePostButtonProp
     finally { setIsUploading(false); }
   };
 
+  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('video/')) { toast({ title: "Invalid file", variant: "destructive" }); return; }
+    if (file.size > 50 * 1024 * 1024) { toast({ title: "File too large", variant: "destructive" }); return; }
+    setIsUploadingVideo(true);
+    try {
+      const filePath = `videos/${Math.random()}.${file.name.split('.').pop()}`;
+      const { error } = await supabase.storage.from('post-images').upload(filePath, file);
+      if (error) throw error;
+      const { data: { publicUrl } } = supabase.storage.from('post-images').getPublicUrl(filePath);
+      setVideoUrl(publicUrl);
+    } catch { toast({ title: "Upload failed", variant: "destructive" }); }
+    finally { setIsUploadingVideo(false); }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !description.trim()) {
-      toast({ title: "Missing information", variant: "destructive" });
-      return;
-    }
-    onCreatePost({ title: title.trim(), description: description.trim(), category, imageUrl: imageUrl.trim() || undefined });
-    setTitle(""); setDescription(""); setCategory("General"); setImageUrl("");
+    if (!title.trim() || !description.trim()) { toast({ title: "Missing information", variant: "destructive" }); return; }
+    onCreatePost({ title: title.trim(), description: description.trim(), category, imageUrl: imageUrl.trim() || undefined, videoUrl: videoUrl.trim() || undefined });
+    setTitle(""); setDescription(""); setCategory("General"); setImageUrl(""); setVideoUrl("");
     setIsDialogOpen(false);
   };
 
@@ -71,19 +85,19 @@ const FloatingCreatePostButton = ({ onCreatePost }: FloatingCreatePostButtonProp
           <DialogHeader><DialogTitle>Create New Post</DialogTitle></DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="fab-title">Title/Heading *</Label>
-              <Input id="fab-title" placeholder="Enter your question or content title..." value={title} onChange={(e) => setTitle(e.target.value)} maxLength={200} />
+              <Label>Title/Heading *</Label>
+              <Input placeholder="Enter your question or content title..." value={title} onChange={(e) => setTitle(e.target.value)} maxLength={200} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="fab-desc">Description/Question *</Label>
-              <Textarea id="fab-desc" placeholder="Provide more details..." value={description} onChange={(e) => setDescription(e.target.value)} className="resize-none" rows={4} maxLength={1000} />
+              <Label>Description/Question *</Label>
+              <Textarea placeholder="Provide more details..." value={description} onChange={(e) => setDescription(e.target.value)} className="resize-none" rows={4} maxLength={1000} />
               <div className="text-xs text-muted-foreground text-right">{description.length}/1000</div>
             </div>
             <div className="space-y-2">
               <Label>Category</Label>
               <Select value={category} onValueChange={setCategory}>
                 <SelectTrigger><SelectValue placeholder="General" /></SelectTrigger>
-                <SelectContent>{categories.map((cat) => (<SelectItem key={cat} value={cat}>{cat}</SelectItem>))}</SelectContent>
+                <SelectContent>{categories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
@@ -99,6 +113,22 @@ const FloatingCreatePostButton = ({ onCreatePost }: FloatingCreatePostButtonProp
                 <div className="mt-2 relative">
                   <img src={imageUrl} alt="Preview" className="max-w-full h-32 object-cover rounded-lg" />
                   <Button type="button" variant="destructive" size="sm" className="absolute top-2 right-2" onClick={() => setImageUrl("")}><X className="h-3 w-3" /></Button>
+                </div>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label>Video (Optional)</Label>
+              <div className="flex space-x-2">
+                <Input placeholder="Paste video URL or upload..." value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} disabled={isUploadingVideo} />
+                <Button type="button" variant="outline" size="sm" className="px-3" disabled={isUploadingVideo} onClick={() => document.getElementById('fab-video-upload')?.click()}>
+                  {isUploadingVideo ? <Loader2 className="h-4 w-4 animate-spin" /> : <Video className="h-4 w-4" />}
+                </Button>
+                <input id="fab-video-upload" type="file" accept="video/*" className="hidden" onChange={handleVideoUpload} />
+              </div>
+              {videoUrl && (
+                <div className="mt-2 relative">
+                  <video src={videoUrl} className="max-w-full h-32 rounded-lg" controls />
+                  <Button type="button" variant="destructive" size="sm" className="absolute top-2 right-2" onClick={() => setVideoUrl("")}><X className="h-3 w-3" /></Button>
                 </div>
               )}
             </div>

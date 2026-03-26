@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider } from "@/hooks/useAuth";
 import Homepage from "./pages/Homepage";
 import AllPosts from "./pages/AllPosts";
+import Bookmarks from "./pages/Bookmarks";
 import Profile from "./pages/Profile";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
@@ -27,12 +28,12 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Homepage />} />
               <Route path="/all-posts" element={<AllPosts />} />
+              <Route path="/bookmarks" element={<Bookmarks />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/about" element={<About />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/collaborate" element={<Collaborate />} />
               <Route path="/auth" element={<Auth />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
           </HashRouter>

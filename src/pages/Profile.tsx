@@ -297,7 +297,7 @@ const Profile = () => {
                 </Badge>
                 <Badge variant="secondary" className="flex items-center gap-1 px-3 py-1">
                   <MessageCircle className="h-3 w-3" />
-                  {stats.totalAnswers} Answers
+                  {stats.totalAnswers} Comments
                 </Badge>
                 <Badge variant="secondary" className="flex items-center gap-1 px-3 py-1">
                   <ThumbsUp className="h-3 w-3" />
@@ -312,7 +312,7 @@ const Profile = () => {
         <Tabs defaultValue="posts" className="space-y-6">
           <TabsList className="grid w-full max-w-lg grid-cols-3">
             <TabsTrigger value="posts">My Posts</TabsTrigger>
-            <TabsTrigger value="answers">My Answers</TabsTrigger>
+            <TabsTrigger value="answers">My Comments</TabsTrigger>
             <TabsTrigger value="settings" className="flex items-center gap-1">
               <Settings className="h-4 w-4" />
               Settings
@@ -355,7 +355,7 @@ const Profile = () => {
                 <Card className="p-8 text-center">
                   <MessageCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                   <p className="text-muted-foreground">
-                    You haven't answered any posts yet.
+                    You haven't commented on any posts yet.
                   </p>
                 </Card>
               ) : (
@@ -364,7 +364,7 @@ const Profile = () => {
                     <div className="space-y-3">
                       <div className="flex items-start justify-between">
                         <p className="text-sm text-muted-foreground">
-                          Answered on: <span className="font-medium text-foreground">{answer.post.title}</span>
+                          Commented on: <span className="font-medium text-foreground">{answer.post.title}</span>
                         </p>
                         <span className="text-xs text-muted-foreground flex items-center gap-1">
                           <Calendar className="h-3 w-3" />

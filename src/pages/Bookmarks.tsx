@@ -1,15 +1,13 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
-import CreatePostForm from "@/components/CreatePostForm";
 import PostCard from "@/components/PostCard";
 import PostCardSkeleton from "@/components/PostCardSkeleton";
-import FloatingCreatePostButton from "@/components/FloatingCreatePostButton";
-import FirstTimeGuide from "@/components/FirstTimeGuide";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserInteractions } from "@/hooks/useUserInteractions";
 import { supabase } from "@/integrations/supabase/client";
+import { Bookmark } from "lucide-react";
 
 interface Answer {
   id: string; content: string; likes: number; dislikes: number; replies: Answer[];
@@ -22,32 +20,30 @@ interface Post {
   authorName?: string; authorAvatar?: string;
 }
 
-const Homepage = () => {
+const Bookmarks = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
   const postIds = posts.map(p => p.id);
   const { interactions, setInteraction } = useUserInteractions(postIds);
 
-  useEffect(() => { fetchPosts(); }, []);
+  useEffect(() => { if (!loading && !user) navigate('/auth'); }, [user, loading]);
   useEffect(() => { if (user) fetchBookmarks(); }, [user]);
 
   const fetchBookmarks = async () => {
     if (!user) return;
-    const { data } = await supabase.from('bookmarks').select('post_id').eq('user_id', user.id);
-    if (data) setBookmarkedIds(new Set(data.map(b => b.post_id)));
-  };
-
-  const fetchPosts = async () => {
+    setIsLoading(true);
     try {
-      setIsLoading(true);
-      const tenDaysAgo = new Date();
-      tenDaysAgo.setDate(tenDaysAgo.getDate() - 10);
-      const { data, error } = await supabase.from('posts').select('*, answers(*)').gte('created_at', tenDaysAgo.toISOString()).order('created_at', { ascending: false });
-      if (error) { toast({ title: "Error", description: "Failed to load posts.", variant: "destructive" }); return; }
+      const { data: bm } = await supabase.from('bookmarks').select('post_id').eq('user_id', user.id);
+      if (!bm || bm.length === 0) { setPosts([]); setBookmarkedIds(new Set()); return; }
+      const ids = bm.map(b => b.post_id);
+      setBookmarkedIds(new Set(ids));
+
+      const { data, error } = await supabase.from('posts').select('*, answers(*)').in('id', ids).order('created_at', { ascending: false });
+      if (error) throw error;
 
       const userIds = [...new Set([...data.map((p: any) => p.user_id), ...data.flatMap((p: any) => p.answers.map((a: any) => a.user_id))].filter(Boolean))];
       let profilesMap: Record<string, any> = {};
@@ -56,14 +52,9 @@ const Homepage = () => {
         if (profiles) profilesMap = Object.fromEntries(profiles.map(p => [p.user_id, p]));
       }
 
-      // Increment views for all fetched posts
-      for (const post of data) {
-        supabase.rpc('increment_post_views', { p_post_id: post.id }).then();
-      }
-
       setPosts(data.map((post: any) => ({
         id: post.id, title: post.title, description: post.description, category: post.category,
-        likes: post.likes, dislikes: post.dislikes, views: (post.views || 0) + 1,
+        likes: post.likes, dislikes: post.dislikes, views: post.views || 0,
         imageUrl: post.image_url, videoUrl: post.video_url, created_at: post.created_at,
         authorName: profilesMap[post.user_id]?.display_name || null,
         authorAvatar: profilesMap[post.user_id]?.avatar_url || null,
@@ -73,25 +64,20 @@ const Homepage = () => {
           authorAvatar: profilesMap[a.user_id]?.avatar_url || null,
         }))
       })));
-    } catch { toast({ title: "Error", description: "Failed to load posts.", variant: "destructive" }); }
+    } catch { toast({ title: "Error", description: "Failed to load bookmarks.", variant: "destructive" }); }
     finally { setIsLoading(false); }
   };
 
-  const handleCreatePost = async (newPostData: { title: string; description: string; category: string; imageUrl?: string; videoUrl?: string }) => {
+  const handleBookmark = async (postId: string) => {
     if (!user) { navigate('/auth'); return; }
-    try {
-      const { data, error } = await supabase.from('posts').insert({
-        user_id: user.id, title: newPostData.title, description: newPostData.description,
-        category: newPostData.category, image_url: newPostData.imageUrl, video_url: newPostData.videoUrl
-      }).select().single();
-      if (error) throw error;
-      const newPost: Post = {
-        id: data.id, title: data.title, description: data.description, category: data.category,
-        likes: data.likes, dislikes: data.dislikes, views: 0, imageUrl: data.image_url,
-        videoUrl: data.video_url, created_at: data.created_at, answers: []
-      };
-      setPosts(prev => [newPost, ...prev]);
-    } catch { toast({ title: "Error", description: "Failed to create post.", variant: "destructive" }); }
+    if (bookmarkedIds.has(postId)) {
+      await supabase.from('bookmarks').delete().eq('user_id', user.id).eq('post_id', postId);
+      setBookmarkedIds(prev => { const n = new Set(prev); n.delete(postId); return n; });
+      setPosts(prev => prev.filter(p => p.id !== postId));
+    } else {
+      await supabase.from('bookmarks').insert({ user_id: user.id, post_id: postId });
+      setBookmarkedIds(prev => new Set(prev).add(postId));
+    }
   };
 
   const handleLike = async (postId: string) => {
@@ -107,8 +93,7 @@ const Homepage = () => {
 
   const handleReport = async (postId: string, reason: string) => {
     if (!user) { navigate('/auth'); return; }
-    const { error } = await supabase.from('reports').insert({ user_id: user.id, post_id: postId, reason });
-    if (error) { toast({ title: "Error", description: "Failed to submit report.", variant: "destructive" }); return; }
+    await supabase.from('reports').insert({ user_id: user.id, post_id: postId, reason });
     toast({ title: "Report submitted", description: "Thank you for helping keep our community safe." });
   };
 
@@ -116,9 +101,9 @@ const Homepage = () => {
     if (!user) { navigate('/auth'); return; }
     try {
       await supabase.from('answers').insert({ post_id: postId, user_id: user.id, content }).select().single();
-      await fetchPosts();
+      await fetchBookmarks();
       toast({ title: "Comment posted!" });
-    } catch { toast({ title: "Error", description: "Failed to add comment.", variant: "destructive" }); }
+    } catch { toast({ title: "Error", variant: "destructive" }); }
   };
 
   const handleAnswerLike = async (answerId: string) => {
@@ -127,27 +112,18 @@ const Homepage = () => {
     catch { toast({ title: "Error", variant: "destructive" }); }
   };
 
-  const handleBookmark = async (postId: string) => {
-    if (!user) { navigate('/auth'); return; }
-    if (bookmarkedIds.has(postId)) {
-      await supabase.from('bookmarks').delete().eq('user_id', user.id).eq('post_id', postId);
-      setBookmarkedIds(prev => { const n = new Set(prev); n.delete(postId); return n; });
-    } else {
-      await supabase.from('bookmarks').insert({ user_id: user.id, post_id: postId });
-      setBookmarkedIds(prev => new Set(prev).add(postId));
-    }
-  };
-
   return (
     <Layout>
       <div className="container mx-auto px-4 py-6 max-w-4xl">
-        <CreatePostForm onCreatePost={handleCreatePost} />
-        <h2 className="text-lg font-semibold text-muted-foreground mb-4">Recent Posts (Last 10 Days)</h2>
+        <h1 className="text-2xl font-bold mb-6 flex items-center gap-2">
+          <Bookmark className="h-6 w-6 text-primary" /> Saved Posts
+        </h1>
         {isLoading ? (
           <div className="space-y-6">{[...Array(3)].map((_, i) => <PostCardSkeleton key={i} />)}</div>
         ) : posts.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
-            <p className="text-lg">No posts in the last 10 days. Be the first to share something!</p>
+            <Bookmark className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p className="text-lg">No saved posts yet. Bookmark posts to find them here.</p>
           </div>
         ) : (
           <div className="space-y-6">
@@ -159,10 +135,8 @@ const Homepage = () => {
           </div>
         )}
       </div>
-      <FloatingCreatePostButton onCreatePost={handleCreatePost} />
-      <FirstTimeGuide />
     </Layout>
   );
 };
 
-export default Homepage;
+export default Bookmarks;
