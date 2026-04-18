@@ -13,8 +13,10 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { User, FileText, MessageCircle, ThumbsUp, Calendar, Settings } from "lucide-react";
+import { User, FileText, MessageCircle, ThumbsUp, Calendar, Settings, Trash2, Loader2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { Button } from "@/components/ui/button";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 interface Answer {
   id: string;
@@ -67,6 +69,7 @@ const Profile = () => {
   const [editPost, setEditPost] = useState<Post | null>(null);
   const [deletePost, setDeletePost] = useState<Post | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [deletingAnswerId, setDeletingAnswerId] = useState<string | null>(null);
   const { toast } = useToast();
   const { user, loading } = useAuth();
   const navigate = useNavigate();
@@ -251,7 +254,24 @@ const Profile = () => {
     }
   };
 
-  if (loading) {
+  const handleDeleteAnswer = async (answerId: string) => {
+    if (!user) return;
+    setDeletingAnswerId(answerId);
+    try {
+      const { error } = await supabase
+        .from('answers')
+        .delete()
+        .eq('id', answerId)
+        .eq('user_id', user.id);
+      if (error) throw error;
+      setUserAnswers(prev => prev.filter(a => a.id !== answerId));
+      toast({ title: "Comment deleted" });
+    } catch (e) {
+      toast({ title: "Error", description: "Failed to delete comment.", variant: "destructive" });
+    } finally {
+      setDeletingAnswerId(null);
+    }
+  };
     return (
       <Layout>
         <div className="container mx-auto px-4 py-8 max-w-4xl">
