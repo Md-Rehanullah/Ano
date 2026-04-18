@@ -9,7 +9,7 @@ const About = () => {
         <div className="text-center mb-16">
           <h1 className="text-4xl md:text-5xl font-bold mb-6">About Bridge</h1>
           <p className="text-lg text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-            Created by Rehan and Company, established in 2025, we're building the future of 
+            Created by atlasTHOUGHT, established in 2025, we're building the future of
             anonymous knowledge sharing and community-driven learning.
           </p>
         </div>
@@ -18,8 +18,8 @@ const About = () => {
           <h2 className="text-3xl font-bold text-center mb-8">Our Mission</h2>
           <Card className="p-8 shadow-elegant text-center">
             <p className="text-lg text-muted-foreground leading-relaxed">
-              We believe that everyone has valuable knowledge to share and important questions to ask. 
-              Our platform removes barriers by allowing completely anonymous participation, 
+              We believe that everyone has valuable knowledge to share and important questions to ask.
+              Our platform removes barriers by allowing completely anonymous participation,
               creating a safe space where curiosity can flourish without judgment.
             </p>
           </Card>
@@ -57,10 +57,10 @@ const About = () => {
         </div>
 
         <Card className="p-8 shadow-elegant text-center">
-          <h2 className="text-2xl font-bold mb-4">Rehan and Company</h2>
+          <h2 className="text-2xl font-bold mb-4">atlasTHOUGHT</h2>
           <p className="text-muted-foreground text-lg mb-4">Established in 2025</p>
           <p className="text-muted-foreground leading-relaxed max-w-2xl mx-auto">
-            We're passionate about creating platforms that empower people to learn, share, 
+            We're passionate about creating platforms that empower people to learn, share,
             and grow together.
           </p>
         </Card>

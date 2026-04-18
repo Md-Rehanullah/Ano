@@ -1,13 +1,15 @@
 import { Link, useLocation } from "react-router-dom";
-import { Moon, Sun, LogIn, LogOut, User, Menu, ArrowUp, CheckCircle, Home, FileText, Info, Mail, Users, Download, Bookmark } from "lucide-react";
+import { Moon, Sun, LogIn, LogOut, User, Menu, ArrowUp, CheckCircle, Home, FileText, Info, Mail, Users, Download, Bookmark, Shield, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/ThemeProvider";
 import { useAuth } from "@/hooks/useAuth";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown } from "lucide-react";
+import FloatingCreatePostButton from "@/components/FloatingCreatePostButton";
 
 interface LayoutProps { children: React.ReactNode; }
 
@@ -24,12 +26,14 @@ const navItems = [
   { to: "/about", label: "About", icon: Info },
   { to: "/contact", label: "Contact", icon: Mail },
   { to: "/collaborate", label: "Collaborate", icon: Users },
+  { to: "/privacy", label: "Privacy Policy", icon: Shield },
 ];
 
 const Layout = ({ children }: LayoutProps) => {
   const location = useLocation();
   const { theme, setTheme } = useTheme();
   const { user, signOut } = useAuth();
+  const { isAdmin } = useIsAdmin();
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [native, setNative] = useState(false);
@@ -56,7 +60,7 @@ const Layout = ({ children }: LayoutProps) => {
                   <SheetHeader className="p-6 pb-4 border-b border-sidebar-border">
                     <SheetTitle className="text-lg font-bold text-sidebar-foreground">Bridge</SheetTitle>
                   </SheetHeader>
-                  <nav className="p-4 space-y-1">
+                  <nav className="p-4 space-y-1 overflow-y-auto max-h-[calc(100vh-180px)]">
                     {navItems.map((item) => (
                       item.hasSubItems ? (
                         <Collapsible key={item.to} open={allPostsOpen} onOpenChange={setAllPostsOpen}>
@@ -89,6 +93,13 @@ const Layout = ({ children }: LayoutProps) => {
                         </Link>
                       )
                     ))}
+                    {isAdmin && (
+                      <Link to="/admin" onClick={() => setSidebarOpen(false)}
+                        className={cn("flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                          location.pathname === "/admin" ? "bg-sidebar-accent text-sidebar-primary" : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground")}>
+                        <LayoutDashboard className="h-4 w-4" /><span>Admin</span>
+                      </Link>
+                    )}
                     {!native && (
                       <a href="https://play.google.com/store/apps/details?id=app.lovable.4a547dd56e2d482a9fd193145e27d70c" target="_blank" rel="noopener noreferrer"
                         className="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors">
@@ -144,6 +155,8 @@ const Layout = ({ children }: LayoutProps) => {
         className={cn("scroll-to-top fixed bottom-6 right-6 h-10 w-10 rounded-full p-0 shadow-glow", showScrollTop ? "visible" : "")}>
         <ArrowUp className="h-4 w-4" />
       </Button>
+      {/* Global floating create-post button — hidden on About / Contact / Collaborate / Auth / Admin / Privacy via the component itself */}
+      <FloatingCreatePostButton />
     </div>
   );
 };
