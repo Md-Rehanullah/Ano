@@ -52,7 +52,7 @@ const Collaborate = () => {
 
           <Button size="lg" className="bg-gradient-primary">
             <ExternalLink className="h-5 w-5 mr-2" />
-            <a href="https://github.com/rehan" target="_blank" rel="noopener noreferrer">
+            <a href="https://github.com/Md-Rehanullah" target="_blank" rel="noopener noreferrer">
               Visit GitHub Repository
             </a>
           </Button>
@@ -218,7 +218,7 @@ const Collaborate = () => {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button size="lg" className="bg-gradient-primary">
               <Github className="h-5 w-5 mr-2" />
-              <a href="https://github.com/rehan" target="_blank" rel="noopener noreferrer">
+              <a href="https://github.com/Md-Rehanullah" target="_blank" rel="noopener noreferrer">
                 View on GitHub
               </a>
             </Button>
