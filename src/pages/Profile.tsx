@@ -13,8 +13,10 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { User, FileText, MessageCircle, ThumbsUp, Calendar, Settings } from "lucide-react";
+import { User, FileText, MessageCircle, ThumbsUp, Calendar, Settings, Trash2, Loader2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { Button } from "@/components/ui/button";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 interface Answer {
   id: string;
@@ -67,6 +69,7 @@ const Profile = () => {
   const [editPost, setEditPost] = useState<Post | null>(null);
   const [deletePost, setDeletePost] = useState<Post | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [deletingAnswerId, setDeletingAnswerId] = useState<string | null>(null);
   const { toast } = useToast();
   const { user, loading } = useAuth();
   const navigate = useNavigate();
@@ -251,6 +254,25 @@ const Profile = () => {
     }
   };
 
+  const handleDeleteAnswer = async (answerId: string) => {
+    if (!user) return;
+    setDeletingAnswerId(answerId);
+    try {
+      const { error } = await supabase
+        .from('answers')
+        .delete()
+        .eq('id', answerId)
+        .eq('user_id', user.id);
+      if (error) throw error;
+      setUserAnswers(prev => prev.filter(a => a.id !== answerId));
+      toast({ title: "Comment deleted" });
+    } catch (e) {
+      toast({ title: "Error", description: "Failed to delete comment.", variant: "destructive" });
+    } finally {
+      setDeletingAnswerId(null);
+    }
+  };
+
   if (loading) {
     return (
       <Layout>
@@ -372,11 +394,29 @@ const Profile = () => {
                         </span>
                       </div>
                       <p className="text-sm">{answer.content}</p>
-                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                      <div className="flex items-center justify-between gap-4 text-xs text-muted-foreground">
                         <span className="flex items-center gap-1">
                           <ThumbsUp className="h-3 w-3" />
                           {answer.likes} likes
                         </span>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-7 text-destructive hover:text-destructive">
+                              {deletingAnswerId === answer.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3 mr-1" />}
+                              Delete
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete this comment?</AlertDialogTitle>
+                              <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDeleteAnswer(answer.id)}>Delete</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                     </div>
                   </Card>

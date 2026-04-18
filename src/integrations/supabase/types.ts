@@ -162,6 +162,7 @@ export type Database = {
           image_url: string | null
           is_seed: boolean
           likes: number
+          seed_author_name: string | null
           title: string
           updated_at: string
           user_id: string | null
@@ -177,6 +178,7 @@ export type Database = {
           image_url?: string | null
           is_seed?: boolean
           likes?: number
+          seed_author_name?: string | null
           title: string
           updated_at?: string
           user_id?: string | null
@@ -192,6 +194,7 @@ export type Database = {
           image_url?: string | null
           is_seed?: boolean
           likes?: number
+          seed_author_name?: string | null
           title?: string
           updated_at?: string
           user_id?: string | null

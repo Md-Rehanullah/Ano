@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { z } from "zod";
 import Layout from "@/components/Layout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,6 +8,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Mail, Send, MessageSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+
+const contactSchema = z.object({
+  name: z.string().trim().min(1, "Name is required").max(100),
+  email: z.string().trim().email("Invalid email").max(255),
+  subject: z.string().trim().min(1, "Subject is required").max(200),
+  message: z.string().trim().min(1, "Message is required").max(1000),
+});
 
 const Contact = () => {
   const [name, setName] = useState("");
@@ -15,21 +25,33 @@ const Contact = () => {
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !email.trim() || !subject.trim() || !message.trim()) {
-      toast({ title: "Missing information", description: "Please fill in all fields.", variant: "destructive" });
+    const parsed = contactSchema.safeParse({ name, email, subject, message });
+    if (!parsed.success) {
+      toast({ title: "Please check your input", description: parsed.error.issues[0].message, variant: "destructive" });
       return;
     }
     setIsSubmitting(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      toast({ title: "Message sent!", description: "Thank you for contacting us. We'll get back to you soon." });
+      const { error } = await supabase.from("contact_messages").insert({
+        name: parsed.data.name,
+        email: parsed.data.email,
+        subject: parsed.data.subject,
+        message: parsed.data.message,
+        user_id: user?.id ?? null,
+      });
+      if (error) throw error;
+      toast({ title: "Message sent!", description: "Thanks — we received your message and will get back to you soon." });
       setName(""); setEmail(""); setSubject(""); setMessage("");
-    } catch {
-      toast({ title: "Error", description: "Something went wrong.", variant: "destructive" });
-    } finally { setIsSubmitting(false); }
+    } catch (err) {
+      console.error("Contact submit failed:", err);
+      toast({ title: "Could not send", description: "Please try again in a moment.", variant: "destructive" });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (

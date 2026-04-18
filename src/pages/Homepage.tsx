@@ -4,7 +4,6 @@ import Layout from "@/components/Layout";
 import CreatePostForm from "@/components/CreatePostForm";
 import PostCard from "@/components/PostCard";
 import PostCardSkeleton from "@/components/PostCardSkeleton";
-import FloatingCreatePostButton from "@/components/FloatingCreatePostButton";
 import FirstTimeGuide from "@/components/FirstTimeGuide";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -46,7 +45,12 @@ const Homepage = () => {
       setIsLoading(true);
       const tenDaysAgo = new Date();
       tenDaysAgo.setDate(tenDaysAgo.getDate() - 10);
-      const { data, error } = await supabase.from('posts').select('*, answers(*)').gte('created_at', tenDaysAgo.toISOString()).order('created_at', { ascending: false });
+      // Include posts from the last 10 days OR any seed/demo post (is_seed=true) so the homepage stays full
+      const { data, error } = await supabase
+        .from('posts')
+        .select('*, answers(*)')
+        .or(`created_at.gte.${tenDaysAgo.toISOString()},is_seed.eq.true`)
+        .order('created_at', { ascending: false });
       if (error) { toast({ title: "Error", description: "Failed to load posts.", variant: "destructive" }); return; }
 
       const userIds = [...new Set([...data.map((p: any) => p.user_id), ...data.flatMap((p: any) => p.answers.map((a: any) => a.user_id))].filter(Boolean))];
@@ -65,7 +69,7 @@ const Homepage = () => {
         id: post.id, title: post.title, description: post.description, category: post.category,
         likes: post.likes, dislikes: post.dislikes, views: (post.views || 0) + 1,
         imageUrl: post.image_url, videoUrl: post.video_url, created_at: post.created_at,
-        authorName: profilesMap[post.user_id]?.display_name || null,
+        authorName: profilesMap[post.user_id]?.display_name || post.seed_author_name || null,
         authorAvatar: profilesMap[post.user_id]?.avatar_url || null,
         answers: post.answers.map((a: any) => ({
           id: a.id, content: a.content, likes: a.likes, dislikes: a.dislikes, replies: [], created_at: a.created_at,
@@ -159,7 +163,6 @@ const Homepage = () => {
           </div>
         )}
       </div>
-      <FloatingCreatePostButton onCreatePost={handleCreatePost} />
       <FirstTimeGuide />
     </Layout>
   );

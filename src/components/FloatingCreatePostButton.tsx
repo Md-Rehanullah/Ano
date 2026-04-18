@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { PenSquare, Upload, X, Loader2, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,16 +8,20 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 
 const categories = ["General", "Technology", "Education", "Lifestyle", "Other"];
 
-interface FloatingCreatePostButtonProps {
-  onCreatePost: (post: { title: string; description: string; category: string; imageUrl?: string; videoUrl?: string }) => void;
+// Routes where the floating create button is hidden
+const HIDDEN_ROUTES = ["/about", "/contact", "/collaborate", "/auth", "/admin", "/privacy"];
+
+interface Props {
+  /** Optional custom handler. If omitted, the FAB writes to Supabase directly and reloads the page. */
+  onCreatePost?: (post: { title: string; description: string; category: string; imageUrl?: string; videoUrl?: string }) => void;
 }
 
-const FloatingCreatePostButton = ({ onCreatePost }: FloatingCreatePostButtonProps) => {
-  const [isVisible, setIsVisible] = useState(false);
+const FloatingCreatePostButton = ({ onCreatePost }: Props) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -25,13 +30,14 @@ const FloatingCreatePostButton = ({ onCreatePost }: FloatingCreatePostButtonProp
   const [videoUrl, setVideoUrl] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [isUploadingVideo, setIsUploadingVideo] = useState(false);
+  const [isPosting, setIsPosting] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  useEffect(() => {
-    const handleScroll = () => setIsVisible(window.scrollY > 900);
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  // Hide on certain routes
+  if (HIDDEN_ROUTES.some(r => location.pathname.startsWith(r))) return null;
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -65,19 +71,54 @@ const FloatingCreatePostButton = ({ onCreatePost }: FloatingCreatePostButtonProp
     finally { setIsUploadingVideo(false); }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const reset = () => {
+    setTitle(""); setDescription(""); setCategory("General"); setImageUrl(""); setVideoUrl("");
+  };
+
+  const defaultCreate = async (newPost: { title: string; description: string; category: string; imageUrl?: string; videoUrl?: string }) => {
+    if (!user) { navigate("/auth"); return; }
+    setIsPosting(true);
+    try {
+      const { error } = await supabase.from("posts").insert({
+        user_id: user.id,
+        title: newPost.title,
+        description: newPost.description,
+        category: newPost.category,
+        image_url: newPost.imageUrl,
+        video_url: newPost.videoUrl,
+      });
+      if (error) throw error;
+      toast({ title: "Post created!" });
+      // Navigate home so the user sees it; if already on home/all-posts the page will refresh
+      if (location.pathname === "/") window.location.reload();
+      else navigate("/");
+    } catch (e) {
+      toast({ title: "Failed to create post", variant: "destructive" });
+    } finally {
+      setIsPosting(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !description.trim()) { toast({ title: "Missing information", variant: "destructive" }); return; }
-    onCreatePost({ title: title.trim(), description: description.trim(), category, imageUrl: imageUrl.trim() || undefined, videoUrl: videoUrl.trim() || undefined });
-    setTitle(""); setDescription(""); setCategory("General"); setImageUrl(""); setVideoUrl("");
+    const payload = { title: title.trim(), description: description.trim(), category, imageUrl: imageUrl.trim() || undefined, videoUrl: videoUrl.trim() || undefined };
+    if (onCreatePost) {
+      onCreatePost(payload);
+    } else {
+      await defaultCreate(payload);
+    }
+    reset();
     setIsDialogOpen(false);
   };
 
-  if (!isVisible) return null;
-
   return (
     <>
-      <Button onClick={() => setIsDialogOpen(true)} className="fixed bottom-20 right-6 z-50 h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 p-0 animate-in fade-in zoom-in" aria-label="Create a new post">
+      <Button
+        onClick={() => user ? setIsDialogOpen(true) : navigate("/auth")}
+        className="fixed bottom-20 right-6 z-50 h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 p-0"
+        aria-label="Create a new post"
+      >
         <PenSquare className="h-6 w-6" />
       </Button>
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -133,7 +174,9 @@ const FloatingCreatePostButton = ({ onCreatePost }: FloatingCreatePostButtonProp
               )}
             </div>
             <div className="flex space-x-3 pt-4">
-              <Button type="submit" className="flex-1">Post Question/Content</Button>
+              <Button type="submit" className="flex-1" disabled={isPosting}>
+                {isPosting ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Posting...</> : "Post"}
+              </Button>
               <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
             </div>
           </form>
