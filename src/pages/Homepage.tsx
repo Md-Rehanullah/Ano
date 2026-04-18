@@ -4,7 +4,6 @@ import Layout from "@/components/Layout";
 import CreatePostForm from "@/components/CreatePostForm";
 import PostCard from "@/components/PostCard";
 import PostCardSkeleton from "@/components/PostCardSkeleton";
-import FloatingCreatePostButton from "@/components/FloatingCreatePostButton";
 import FirstTimeGuide from "@/components/FirstTimeGuide";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -164,7 +163,6 @@ const Homepage = () => {
           </div>
         )}
       </div>
-      <FloatingCreatePostButton onCreatePost={handleCreatePost} />
       <FirstTimeGuide />
     </Layout>
   );

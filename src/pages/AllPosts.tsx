@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import Layout from "@/components/Layout";
 import PostCard from "@/components/PostCard";
 import PostCardSkeleton from "@/components/PostCardSkeleton";
-import FloatingCreatePostButton from "@/components/FloatingCreatePostButton";
+
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserInteractions } from "@/hooks/useUserInteractions";
@@ -200,7 +200,6 @@ const AllPosts = () => {
           <TabsContent value="most-liked">{renderPosts(mostLikedPosts)}</TabsContent>
         </Tabs>
       </div>
-      <FloatingCreatePostButton onCreatePost={handleCreatePost} />
     </Layout>
   );
 };
