@@ -92,8 +92,8 @@ const CreatePostForm = ({ onCreatePost }: CreatePostFormProps) => {
         </div>
         <div className="space-y-2">
           <Label htmlFor="description">Description/Question *</Label>
-          <Textarea id="description" placeholder="Provide more details..." value={description} onChange={(e) => setDescription(e.target.value)} className="resize-none" rows={4} maxLength={1000} />
-          <div className="text-xs text-muted-foreground text-right">{description.length}/1000</div>
+          <Textarea id="description" placeholder="Provide more details..." value={description} onChange={(e) => setDescription(e.target.value)} className="resize-y min-h-[120px]" rows={6} maxLength={10000} />
+          <div className="text-xs text-muted-foreground text-right">{description.length}/10000</div>
         </div>
         <div className="space-y-2">
           <Label>Category</Label>

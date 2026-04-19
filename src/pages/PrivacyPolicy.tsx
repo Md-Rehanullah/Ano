@@ -84,7 +84,7 @@ const PrivacyPolicy = () => {
               <li>Lodge a complaint with your local data protection authority.</li>
             </ul>
             <p className="mt-2">To exercise these rights, contact us through the in-app Contact form or email
-              <a className="text-primary underline ml-1" href="mailto:privacy@atlasthought.app">privacy@atlasthought.app</a>.
+              <a className="text-primary underline ml-1" href="mailto:atlasthoughthelp@gmail.com">atlasthoughthelp@gmail.com</a>.
             </p>
           </section>
 
@@ -119,7 +119,7 @@ const PrivacyPolicy = () => {
           <section>
             <h2 className="text-lg font-semibold text-foreground mb-2">13. Contact Us</h2>
             <p>For privacy-related questions, contact us through the in-app Contact page or email
-              <a className="text-primary underline ml-1" href="mailto:privacy@atlasthought.app">privacy@atlasthought.app</a>.
+              <a className="text-primary underline ml-1" href="mailto:atlasthoughthelp@gmail.com">atlasthoughthelp@gmail.com</a>.
             </p>
           </section>
         </Card>
