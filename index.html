@@ -7,17 +7,18 @@
     <meta name="description" content="Bridge — A place where curious minds connect. Ask questions, share insights, and grow together." />
     <meta name="author" content="atlasTHOUGHT" />
     <meta name="keywords" content="Bridge, Q&A platform, knowledge sharing, community" />
-    <link rel="icon" type="image/png" href="/images/gnosys-logo.png" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/images/bridge-logo.png" />
 
     <meta property="og:title" content="Bridge - Connect & Share" />
     <meta property="og:description" content="A place where curious minds connect. Ask questions, share insights, and grow together." />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="/images/gnosys-logo.png" />
+    <meta property="og:image" content="/images/bridge-logo.png" />
 
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Bridge - Connect & Share" />
     <meta name="twitter:description" content="A place where curious minds connect." />
-    <meta name="twitter:image" content="/images/gnosys-logo.png" />
+    <meta name="twitter:image" content="/images/bridge-logo.png" />
 
     <style>
       #splash-screen {
@@ -25,97 +26,17 @@
         inset: 0;
         z-index: 99999;
         display: flex;
-        flex-direction: column;
         align-items: center;
         justify-content: center;
-        background: linear-gradient(160deg, #0c1a2a 0%, #123040 40%, #1a4a5a 70%, #123040 100%);
+        background: #000;
         transition: opacity 0.5s ease-out;
         overflow: hidden;
       }
-      #splash-screen.fade-out {
-        opacity: 0;
-        pointer-events: none;
-      }
-      #splash-screen::before {
-        content: '';
-        position: absolute;
-        width: 600px;
-        height: 600px;
-        border-radius: 50%;
-        background: radial-gradient(circle, rgba(14,165,197,0.15) 0%, transparent 70%);
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        animation: pulse-glow 3s ease-in-out infinite;
-      }
-      .splash-logo {
-        width: 120px;
-        height: 120px;
-        border-radius: 24px;
-        object-fit: cover;
-        margin-bottom: 28px;
-        position: relative;
-        z-index: 1;
-        animation: logo-appear 0.8s ease-out forwards;
-        box-shadow: 0 8px 32px rgba(14,165,197,0.3);
-      }
-      .splash-title {
-        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-        font-size: 38px;
-        font-weight: 800;
-        letter-spacing: 6px;
-        color: #e8ecf4;
-        margin: 0;
-        position: relative;
-        z-index: 1;
-        animation: title-appear 0.8s 0.3s ease-out both;
-      }
-      .splash-tagline {
-        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-        font-size: 15px;
-        font-weight: 400;
-        letter-spacing: 4px;
-        color: rgba(165,200,220,0.8);
-        margin: 8px 0 0;
-        position: relative;
-        z-index: 1;
-        animation: title-appear 0.8s 0.5s ease-out both;
-      }
-      .splash-loader {
-        margin-top: 48px;
-        width: 40px;
-        height: 3px;
-        background: rgba(14,165,197,0.2);
-        border-radius: 3px;
-        overflow: hidden;
-        position: relative;
-        z-index: 1;
-        animation: title-appear 0.8s 0.7s ease-out both;
-      }
-      .splash-loader::after {
-        content: '';
-        position: absolute;
+      #splash-screen.fade-out { opacity: 0; pointer-events: none; }
+      #splash-video {
+        width: 100%;
         height: 100%;
-        width: 60%;
-        background: linear-gradient(90deg, #0ea5c5, #38bdf8);
-        border-radius: 3px;
-        animation: loader-slide 1.2s ease-in-out infinite;
-      }
-      @keyframes pulse-glow {
-        0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
-        50% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
-      }
-      @keyframes logo-appear {
-        from { opacity: 0; transform: scale(0.8) translateY(20px); }
-        to { opacity: 1; transform: scale(1) translateY(0); }
-      }
-      @keyframes title-appear {
-        from { opacity: 0; transform: translateY(12px); }
-        to { opacity: 1; transform: translateY(0); }
-      }
-      @keyframes loader-slide {
-        0% { transform: translateX(-100%); }
-        100% { transform: translateX(200%); }
+        object-fit: cover;
       }
     </style>
   </head>
@@ -123,24 +44,31 @@
   <body>
     <!-- Splash Screen -->
     <div id="splash-screen">
-      <img src="/images/gnosys-logo.png" alt="Bridge" class="splash-logo" />
-      <p class="splash-title">BRIDGE</p>
-      <p class="splash-tagline">CONNECT & SHARE</p>
-      <div class="splash-loader"></div>
+      <video id="splash-video" autoplay muted playsinline preload="auto" poster="/images/bridge-logo.png">
+        <source src="/splash.mp4" type="video/mp4" />
+      </video>
     </div>
 
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <script>
-      window.addEventListener('load', function() {
-        setTimeout(function() {
-          var splash = document.getElementById('splash-screen');
-          if (splash) {
-            splash.classList.add('fade-out');
-            setTimeout(function() { splash.remove(); }, 500);
-          }
-        }, 2200);
-      });
+      (function() {
+        var splash = document.getElementById('splash-screen');
+        var video = document.getElementById('splash-video');
+        var removed = false;
+        function hide() {
+          if (removed || !splash) return;
+          removed = true;
+          splash.classList.add('fade-out');
+          setTimeout(function() { splash.remove(); }, 500);
+        }
+        if (video) {
+          video.addEventListener('ended', hide);
+          video.addEventListener('error', hide);
+        }
+        // Safety fallback in case video never fires events
+        setTimeout(hide, 6000);
+      })();
     </script>
   </body>
 </html>

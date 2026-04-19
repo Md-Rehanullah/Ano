@@ -47,6 +47,8 @@ interface PostCardProps {
   isBookmarked?: boolean;
 }
 
+const READ_MORE_THRESHOLD = 4000; // ~600 words
+
 const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmark, userInteraction, isBookmarked }: PostCardProps) => {
   const [showAllAnswers, setShowAllAnswers] = useState(false);
   const [newAnswer, setNewAnswer] = useState("");
@@ -54,7 +56,13 @@ const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmar
   const [reportReason, setReportReason] = useState("");
   const [showReportForm, setShowReportForm] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const { toast } = useToast();
+
+  const isLong = post.description.length > READ_MORE_THRESHOLD;
+  const visibleDescription = !expanded && isLong
+    ? post.description.slice(0, READ_MORE_THRESHOLD).trimEnd() + "…"
+    : post.description;
 
   const displayedAnswers = showAllAnswers ? post.answers : post.answers.slice(0, 4);
   const hasMoreAnswers = post.answers.length > 4;
@@ -111,7 +119,16 @@ const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmar
 
         {/* Content Box */}
         <div className="bg-muted/30 rounded-lg p-3 sm:p-4">
-          <p className="text-sm sm:text-base text-foreground/90 whitespace-pre-wrap">{post.description}</p>
+          <p className="text-sm sm:text-base text-foreground/90 whitespace-pre-wrap">{visibleDescription}</p>
+          {isLong && (
+            <button
+              type="button"
+              onClick={() => setExpanded(!expanded)}
+              className="mt-2 text-xs sm:text-sm font-medium text-primary hover:underline"
+            >
+              {expanded ? "Show less" : "Read more"}
+            </button>
+          )}
         </div>
 
         {/* Media */}
