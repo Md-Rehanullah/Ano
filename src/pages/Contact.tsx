@@ -107,12 +107,14 @@ const Contact = () => {
               </div>
             </Card>
             <Card className="p-8 shadow-card">
-              <h3 className="text-xl font-semibold mb-4">Response Time</h3>
-              <p className="text-muted-foreground mb-4">We typically respond within 24-48 hours.</p>
-              <div className="text-sm text-muted-foreground">
-                <p className="mb-2"><strong>Business Hours:</strong> Monday - Friday, 9 AM - 6 PM (GMT)</p>
-                <p><strong>Emergency Support:</strong> Available 24/7 for critical issues</p>
-              </div>
+              <h3 className="text-xl font-semibold mb-4">Email Us Directly</h3>
+              <p className="text-muted-foreground mb-3">
+                Prefer email? Reach our support team at:
+              </p>
+              <a href="mailto:atlasthoughthelp@gmail.com" className="text-primary font-medium hover:underline break-all">
+                atlasthoughthelp@gmail.com
+              </a>
+              <p className="text-sm text-muted-foreground mt-4">We typically respond within 24-48 hours.</p>
             </Card>
           </div>
         </div>
