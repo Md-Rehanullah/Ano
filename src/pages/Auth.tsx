@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -149,6 +149,10 @@ const Auth = () => {
               </form>
             </TabsContent>
           </Tabs>
+          <p className="text-center text-sm text-muted-foreground mt-6">
+            Don't have an account?{" "}
+            <Link to="/signup" className="text-primary font-medium hover:underline">Create one</Link>
+          </p>
         </CardContent>
       </Card>
     </div>
