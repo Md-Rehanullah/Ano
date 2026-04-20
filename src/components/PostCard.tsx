@@ -1,13 +1,15 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { ThumbsUp, Share2, Flag, MessageCircle, ChevronDown, ChevronUp, User, Eye, Bookmark, BookmarkCheck } from "lucide-react";
+import { ThumbsUp, Share2, Flag, MessageCircle, ChevronDown, ChevronUp, Eye, Bookmark, BookmarkCheck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
+import UserAvatar from "@/components/UserAvatar";
+import MediaLightbox from "@/components/MediaLightbox";
+import VideoPlayer from "@/components/VideoPlayer";
 
 interface Answer {
   id: string;
@@ -34,6 +36,8 @@ interface Post {
   videoUrl?: string;
   authorName?: string;
   authorAvatar?: string;
+  authorUserId?: string | null;
+  isSeed?: boolean;
 }
 
 interface PostCardProps {
@@ -47,7 +51,8 @@ interface PostCardProps {
   isBookmarked?: boolean;
 }
 
-const READ_MORE_THRESHOLD = 4000; // ~600 words
+// ~350 words ≈ 2300 chars
+const READ_MORE_THRESHOLD = 2300;
 
 const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmark, userInteraction, isBookmarked }: PostCardProps) => {
   const [showAllAnswers, setShowAllAnswers] = useState(false);
@@ -58,6 +63,7 @@ const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmar
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const isLong = post.description.length > READ_MORE_THRESHOLD;
   const visibleDescription = !expanded && isLong
@@ -66,6 +72,14 @@ const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmar
 
   const displayedAnswers = showAllAnswers ? post.answers : post.answers.slice(0, 4);
   const hasMoreAnswers = post.answers.length > 4;
+
+  const openAuthorProfile = () => {
+    if (post.isSeed) {
+      navigate(`/u/private`);
+      return;
+    }
+    if (post.authorUserId) navigate(`/u/${post.authorUserId}`);
+  };
 
   const handleShare = async () => {
     try {
@@ -92,29 +106,33 @@ const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmar
     }
   };
 
+  const mediaType: "image" | "video" | null = post.videoUrl ? "video" : post.imageUrl ? "image" : null;
+  const mediaSrc = post.videoUrl || post.imageUrl || "";
+
   return (
     <Card className="p-4 sm:p-6 shadow-card hover:shadow-elegant transition-all duration-300">
       <div className="space-y-3">
-        {/* Post Header */}
+        {/* Post Header — author area is clickable */}
         <div className="flex items-start gap-3">
-          <Avatar className="h-9 w-9 flex-shrink-0 mt-0.5">
-            <AvatarImage src={post.authorAvatar || undefined} alt={post.authorName || "Anonymous"} />
-            <AvatarFallback className="bg-primary/10 text-primary text-xs">
-              <User className="h-4 w-4" />
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between mb-1">
-              <div>
-                <span className="text-sm font-medium text-foreground">{post.authorName || "Anonymous"}</span>
-                <span className="text-xs text-muted-foreground ml-2">
-                  {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
-                </span>
+          <button
+            type="button"
+            onClick={openAuthorProfile}
+            className="flex items-start gap-3 flex-1 min-w-0 text-left hover:opacity-80 transition-opacity"
+          >
+            <UserAvatar src={post.authorAvatar} name={post.authorName} className="h-9 w-9 flex-shrink-0 mt-0.5" fallbackClassName="text-xs" />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-start justify-between mb-1">
+                <div>
+                  <span className="text-sm font-medium text-foreground hover:text-primary transition-colors">{post.authorName || "Anonymous"}</span>
+                  <span className="text-xs text-muted-foreground ml-2">
+                    {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
+                  </span>
+                </div>
               </div>
-              <Badge variant="secondary" className="text-[10px] ml-2 shrink-0">{post.category}</Badge>
+              <h3 className="text-base sm:text-lg font-semibold">{post.title}</h3>
             </div>
-            <h3 className="text-base sm:text-lg font-semibold">{post.title}</h3>
-          </div>
+          </button>
+          <Badge variant="secondary" className="text-[10px] ml-2 shrink-0">{post.category}</Badge>
         </div>
 
         {/* Content Box */}
@@ -132,22 +150,25 @@ const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmar
         </div>
 
         {/* Media */}
-        {post.imageUrl && (
-          <>
-            <div className="rounded-lg overflow-hidden cursor-pointer" onClick={() => setLightboxOpen(true)}>
-              <img src={post.imageUrl} alt="Post content" className="w-full h-48 object-cover hover:opacity-90 transition-opacity" />
-            </div>
-            <Dialog open={lightboxOpen} onOpenChange={setLightboxOpen}>
-              <DialogContent className="max-w-[90vw] max-h-[90vh] p-2 bg-black/90 border-none">
-                <img src={post.imageUrl} alt="Post content full" className="w-full h-full object-contain max-h-[85vh]" />
-              </DialogContent>
-            </Dialog>
-          </>
+        {post.imageUrl && !post.videoUrl && (
+          <div className="rounded-lg overflow-hidden cursor-pointer" onClick={() => setLightboxOpen(true)}>
+            <img src={post.imageUrl} alt="Post content" className="w-full max-h-80 object-cover hover:opacity-90 transition-opacity" />
+          </div>
         )}
         {post.videoUrl && (
-          <div className="rounded-lg overflow-hidden">
-            <video src={post.videoUrl} controls className="w-full max-h-80 rounded-lg" />
-          </div>
+          <VideoPlayer src={post.videoUrl} onClick={() => setLightboxOpen(true)} />
+        )}
+
+        {/* Lightbox with download/share/report */}
+        {mediaType && (
+          <MediaLightbox
+            open={lightboxOpen}
+            onOpenChange={setLightboxOpen}
+            src={mediaSrc}
+            type={mediaType}
+            postId={post.id}
+            onReport={(reason) => onReport(post.id, `[media] ${reason}`)}
+          />
         )}
 
         {/* Action Buttons - single row */}
@@ -217,10 +238,7 @@ const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmar
             {displayedAnswers.map((answer) => (
               <div key={answer.id} className="p-3 bg-muted/30 rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
-                  <Avatar className="h-6 w-6">
-                    <AvatarImage src={answer.authorAvatar || undefined} />
-                    <AvatarFallback className="bg-primary/10 text-primary text-[10px]"><User className="h-3 w-3" /></AvatarFallback>
-                  </Avatar>
+                  <UserAvatar src={answer.authorAvatar} name={answer.authorName} className="h-6 w-6" fallbackClassName="text-[10px]" />
                   <span className="text-xs font-medium">{answer.authorName || "Anonymous"}</span>
                 </div>
                 <p className="text-sm mb-2">{answer.content}</p>

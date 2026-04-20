@@ -54,6 +54,7 @@ interface UserAnswer {
 interface UserProfile {
   display_name: string | null;
   avatar_url: string | null;
+  bio: string | null;
 }
 
 const Profile = () => {
@@ -95,7 +96,7 @@ const Profile = () => {
       // Fetch user's profile
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('display_name, avatar_url')
+        .select('display_name, avatar_url, bio')
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -299,19 +300,24 @@ const Profile = () => {
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
             <Avatar className="h-20 w-20 border-4 border-primary/20">
               <AvatarImage src={userProfile?.avatar_url || undefined} alt="Profile avatar" />
-              <AvatarFallback className="bg-gradient-primary text-white text-2xl">
+              <AvatarFallback className="bg-gradient-to-br from-primary to-primary/60 text-primary-foreground text-2xl">
                 <User className="h-10 w-10" />
               </AvatarFallback>
             </Avatar>
-            
+
             <div className="flex-1 text-center sm:text-left">
-              <h1 className="text-2xl font-bold mb-2">
+              <h1 className="text-2xl font-bold mb-1">
                 {userProfile?.display_name || "My Profile"}
               </h1>
-              <p className="text-muted-foreground mb-4">
-                View and manage your posts and activity
-              </p>
-              
+              {user?.email && (
+                <p className="text-sm text-muted-foreground mb-2">{user.email}</p>
+              )}
+              {userProfile?.bio ? (
+                <p className="text-sm text-foreground/80 mb-4 whitespace-pre-wrap">{userProfile.bio}</p>
+              ) : (
+                <p className="text-sm text-muted-foreground italic mb-4">No bio yet — add one in Settings.</p>
+              )}
+
               <div className="flex flex-wrap justify-center sm:justify-start gap-4">
                 <Badge variant="secondary" className="flex items-center gap-1 px-3 py-1">
                   <FileText className="h-3 w-3" />
@@ -428,8 +434,10 @@ const Profile = () => {
           <TabsContent value="settings">
             <ProfileSettings
               userId={user.id}
+              email={user.email}
               displayName={userProfile?.display_name || null}
               avatarUrl={userProfile?.avatar_url || null}
+              bio={userProfile?.bio || null}
               onUpdate={fetchUserData}
             />
           </TabsContent>
