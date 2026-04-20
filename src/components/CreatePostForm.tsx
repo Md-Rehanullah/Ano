@@ -5,9 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { PlusCircle, Upload, X, Loader2, Video } from "lucide-react";
+import { PlusCircle, Upload, X, Loader2, Video, ShieldAlert } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { checkLinkSafety, labelFor } from "@/lib/linkSafety";
 
 interface CreatePostFormProps {
   onCreatePost: (post: { title: string; description: string; category: string; imageUrl?: string; videoUrl?: string }) => void;
@@ -24,6 +25,7 @@ const CreatePostForm = ({ onCreatePost }: CreatePostFormProps) => {
   const [videoUrl, setVideoUrl] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [isUploadingVideo, setIsUploadingVideo] = useState(false);
+  const [isChecking, setIsChecking] = useState(false);
   const { toast } = useToast();
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -60,9 +62,35 @@ const CreatePostForm = ({ onCreatePost }: CreatePostFormProps) => {
     finally { setIsUploadingVideo(false); }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !description.trim()) { toast({ title: "Missing information", variant: "destructive" }); return; }
+
+    // Link safety check
+    setIsChecking(true);
+    try {
+      const result = await checkLinkSafety(`${title}\n${description}`);
+      const blocked = result.issues.filter(i => i.severity === "block");
+      if (blocked.length > 0) {
+        toast({
+          title: "Unsafe link detected",
+          description: `${labelFor(blocked[0].reason)}: ${blocked[0].url}. Please remove it.`,
+          variant: "destructive",
+        });
+        setIsChecking(false);
+        return;
+      }
+      const warns = result.issues.filter(i => i.severity === "warn");
+      if (warns.length > 0) {
+        toast({
+          title: "Heads up",
+          description: `${labelFor(warns[0].reason)}: ${warns[0].url}`,
+        });
+      }
+    } finally {
+      setIsChecking(false);
+    }
+
     onCreatePost({ title: title.trim(), description: description.trim(), category, imageUrl: imageUrl.trim() || undefined, videoUrl: videoUrl.trim() || undefined });
     setTitle(""); setDescription(""); setCategory("General"); setImageUrl(""); setVideoUrl("");
     setIsOpen(false);
@@ -135,9 +163,14 @@ const CreatePostForm = ({ onCreatePost }: CreatePostFormProps) => {
           )}
         </div>
         <div className="flex space-x-3 pt-4">
-          <Button type="submit" className="flex-1">Post Question/Content</Button>
+          <Button type="submit" className="flex-1" disabled={isChecking}>
+            {isChecking ? (<><Loader2 className="h-4 w-4 mr-2 animate-spin" />Checking links...</>) : "Post Question/Content"}
+          </Button>
           <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>
         </div>
+        <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+          <ShieldAlert className="h-3 w-3" /> Links in your post are scanned for malicious / adult content before publishing.
+        </p>
       </form>
     </Card>
   );

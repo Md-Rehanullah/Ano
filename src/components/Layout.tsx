@@ -10,6 +10,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown } from "lucide-react";
 import FloatingCreatePostButton from "@/components/FloatingCreatePostButton";
+import UserAvatar from "@/components/UserAvatar";
+import { supabase } from "@/integrations/supabase/client";
 
 interface LayoutProps { children: React.ReactNode; }
 
@@ -38,6 +40,8 @@ const Layout = ({ children }: LayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [native, setNative] = useState(false);
   const [allPostsOpen, setAllPostsOpen] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [displayName, setDisplayName] = useState<string | null>(null);
 
   useEffect(() => { setNative(isNativeApp()); }, []);
   useEffect(() => {
@@ -45,6 +49,11 @@ const Layout = ({ children }: LayoutProps) => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+  useEffect(() => {
+    if (!user) { setAvatarUrl(null); setDisplayName(null); return; }
+    supabase.from('profiles').select('avatar_url, display_name').eq('user_id', user.id).maybeSingle()
+      .then(({ data }) => { setAvatarUrl(data?.avatar_url || null); setDisplayName(data?.display_name || null); });
+  }, [user]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -132,12 +141,12 @@ const Layout = ({ children }: LayoutProps) => {
             </div>
             <div className="flex items-center space-x-2">
               {user ? (
-                <Link to="/profile" className="flex items-center space-x-2 bg-primary/10 px-3 py-1.5 rounded-full border border-primary/20 hover:bg-primary/20 transition-colors">
+                <Link to="/profile" className="flex items-center space-x-2 bg-primary/10 px-2 py-1 rounded-full border border-primary/20 hover:bg-primary/20 transition-colors">
                   <div className="relative">
-                    <User className="h-4 w-4 text-primary" />
-                    <CheckCircle className="absolute -top-1 -right-1 h-2.5 w-2.5 text-green-500 fill-current" />
+                    <UserAvatar src={avatarUrl} name={displayName} className="h-7 w-7 ring-0" fallbackClassName="text-[11px]" />
+                    <CheckCircle className="absolute -top-1 -right-1 h-3 w-3 text-green-500 fill-current bg-card rounded-full" />
                   </div>
-                  <span className="text-sm font-medium text-primary hidden sm:inline">Profile</span>
+                  <span className="text-sm font-medium text-primary hidden sm:inline pr-1">Profile</span>
                 </Link>
               ) : (
                 <Link to="/auth"><Button variant="outline" size="sm" className="flex items-center space-x-1"><LogIn className="h-4 w-4" /><span className="hidden sm:inline">Sign In</span></Button></Link>
