@@ -25,6 +25,7 @@ interface Post {
   likes: number; dislikes: number; views: number; answers: Answer[];
   created_at: string; imageUrl?: string; videoUrl?: string;
   authorName?: string; authorAvatar?: string;
+  authorUserId?: string | null; isSeed?: boolean;
 }
 
 const AllPosts = () => {
@@ -77,6 +78,7 @@ const AllPosts = () => {
         imageUrl: post.image_url, videoUrl: post.video_url, created_at: post.created_at,
         authorName: profilesMap[post.user_id]?.display_name || post.seed_author_name || null,
         authorAvatar: profilesMap[post.user_id]?.avatar_url || null,
+        authorUserId: post.user_id, isSeed: post.is_seed,
         answers: post.answers.map((a: any) => ({
           id: a.id, content: a.content, likes: a.likes, dislikes: a.dislikes, replies: [], created_at: a.created_at,
           authorName: profilesMap[a.user_id]?.display_name || null,
