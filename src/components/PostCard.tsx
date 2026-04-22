@@ -137,17 +137,29 @@ const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmar
             <UserAvatar src={post.authorAvatar} name={post.authorName} className="h-9 w-9 flex-shrink-0 mt-0.5" fallbackClassName="text-xs" />
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between mb-1">
-                <div>
+                <div className="flex items-center gap-1.5 flex-wrap">
                   <span className="text-sm font-medium text-foreground hover:text-primary transition-colors">{post.authorName || "Anonymous"}</span>
-                  <span className="text-xs text-muted-foreground ml-2">
+                  <span className="text-xs text-muted-foreground">
                     {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
                   </span>
+                  {post.edited_at && (
+                    <span className="text-[10px] text-muted-foreground italic flex items-center gap-0.5">
+                      <Pencil className="h-2.5 w-2.5" /> edited
+                    </span>
+                  )}
                 </div>
               </div>
               <h3 className="text-base sm:text-lg font-semibold">{post.title}</h3>
             </div>
           </button>
-          <Badge variant="secondary" className="text-[10px] ml-2 shrink-0">{post.category}</Badge>
+          <div className="flex items-center gap-1 ml-2 shrink-0">
+            {post.is_pinned && (
+              <Badge variant="default" className="text-[10px] gap-1">
+                <Pin className="h-2.5 w-2.5" /> Pinned
+              </Badge>
+            )}
+            <Badge variant="secondary" className="text-[10px]">{post.category}</Badge>
+          </div>
         </div>
 
         {/* Content Box */}
