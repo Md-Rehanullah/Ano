@@ -166,12 +166,15 @@ const Homepage = () => {
     toast({ title: "Report submitted", description: "Thank you for helping keep our community safe." });
   };
 
-  const handleAddAnswer = async (postId: string, content: string) => {
+  const handleAddAnswer = async (postId: string, content: string, parentId?: string | null) => {
     if (!user) { navigate('/auth'); return; }
+    if (!isOnline()) { toast({ title: "You're offline", description: "Reconnect to post a comment.", variant: "destructive" }); return; }
     try {
-      await supabase.from('answers').insert({ post_id: postId, user_id: user.id, content }).select().single();
+      const insertPayload: any = { post_id: postId, user_id: user.id, content };
+      if (parentId) insertPayload.parent_id = parentId;
+      await supabase.from('answers').insert(insertPayload).select().single();
       await fetchPosts();
-      toast({ title: "Comment posted!" });
+      toast({ title: parentId ? "Reply posted!" : "Comment posted!" });
     } catch { toast({ title: "Error", description: "Failed to add comment.", variant: "destructive" }); }
   };
 
