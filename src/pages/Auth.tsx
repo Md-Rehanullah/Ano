@@ -136,7 +136,7 @@ const Auth = () => {
                   <div className="space-y-2"><Label htmlFor="signin-email">Email</Label><Input id="signin-email" type="email" placeholder="Enter your email" value={email} onChange={(e) => setEmail(e.target.value)} required /></div>
                   <div className="space-y-2"><Label htmlFor="signin-password">Password</Label><Input id="signin-password" type="password" placeholder="Enter your password" value={password} onChange={(e) => setPassword(e.target.value)} required /></div>
                   <Button type="submit" className="w-full" disabled={loading}>{loading ? "Signing in..." : "Sign In"}</Button>
-                  <Button type="button" variant="link" className="w-full text-sm text-muted-foreground" onClick={() => setShowForgotPassword(true)}>Forgot Password?</Button>
+                  <Button type="button" variant="link" className="w-full text-sm text-muted-foreground" onClick={() => navigate('/reset-password')}>Forgot Password?</Button>
                 </form>
               )}
             </TabsContent>
