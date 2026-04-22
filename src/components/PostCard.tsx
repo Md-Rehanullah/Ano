@@ -4,12 +4,13 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { ThumbsUp, Share2, Flag, MessageCircle, ChevronDown, ChevronUp, Eye, Bookmark, BookmarkCheck } from "lucide-react";
+import { ThumbsUp, Share2, Flag, MessageCircle, Eye, Bookmark, BookmarkCheck, Pin, Pencil } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import UserAvatar from "@/components/UserAvatar";
 import MediaLightbox from "@/components/MediaLightbox";
 import VideoPlayer from "@/components/VideoPlayer";
+import CommentThread, { buildCommentTree, Comment } from "@/components/CommentThread";
 
 interface Answer {
   id: string;
@@ -18,6 +19,7 @@ interface Answer {
   dislikes: number;
   replies: Answer[];
   created_at: string;
+  parent_id?: string | null;
   authorName?: string;
   authorAvatar?: string;
 }
@@ -32,6 +34,8 @@ interface Post {
   views: number;
   answers: Answer[];
   created_at: string;
+  edited_at?: string | null;
+  is_pinned?: boolean;
   imageUrl?: string;
   videoUrl?: string;
   authorName?: string;
@@ -44,11 +48,13 @@ interface PostCardProps {
   post: Post;
   onLike: (postId: string) => void;
   onReport: (postId: string, reason: string) => void;
-  onAddAnswer: (postId: string, answer: string) => void;
+  onAddAnswer: (postId: string, answer: string, parentId?: string | null) => void;
   onAnswerLike?: (answerId: string) => void;
   onBookmark?: (postId: string) => void;
   userInteraction?: 'like' | 'dislike' | null;
   isBookmarked?: boolean;
+  /** True when the user can react/comment (online + signed-in flow handled by parent). */
+  canInteract?: boolean;
 }
 
 // ~350 words ≈ 2300 chars
