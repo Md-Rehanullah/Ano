@@ -163,8 +163,14 @@ const Homepage = () => {
     }
   };
 
+  const handleRefresh = useCallback(async () => {
+    await Promise.all([fetchPosts(), user ? fetchBookmarks() : Promise.resolve()]);
+    toast({ title: "Feed updated", description: "Showing the latest posts." });
+  }, [user]);
+
   return (
     <Layout>
+      <PullToRefresh onRefresh={handleRefresh} />
       <div className="container mx-auto px-4 py-6 max-w-4xl">
         <CreatePostForm onCreatePost={handleCreatePost} />
         <h2 className="text-lg font-semibold text-muted-foreground mb-4">Recent Posts (Last 10 Days)</h2>
