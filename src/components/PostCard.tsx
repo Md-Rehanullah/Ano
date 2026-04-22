@@ -256,35 +256,19 @@ const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmar
           </div>
         )}
 
-        {/* Comments Section */}
+        {/* Nested comments */}
         {post.answers.length > 0 && (
           <div className="space-y-3 border-t pt-3">
             <h4 className="font-medium text-sm">
               {post.answers.length} {post.answers.length === 1 ? 'Comment' : 'Comments'}
             </h4>
-            {displayedAnswers.map((answer) => (
-              <div key={answer.id} className="p-3 bg-muted/30 rounded-lg">
-                <div className="flex items-center gap-2 mb-2">
-                  <UserAvatar src={answer.authorAvatar} name={answer.authorName} className="h-6 w-6" fallbackClassName="text-[10px]" />
-                  <span className="text-xs font-medium">{answer.authorName || "Anonymous"}</span>
-                </div>
-                <p className="text-sm mb-2">{answer.content}</p>
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <button className="flex items-center space-x-1 hover:text-primary transition-colors cursor-pointer"
-                    onClick={() => onAnswerLike?.(answer.id)}>
-                    <ThumbsUp className="h-3 w-3" /><span>{answer.likes}</span>
-                  </button>
-                  <span>{formatDistanceToNow(new Date(answer.created_at), { addSuffix: true })}</span>
-                </div>
-              </div>
-            ))}
-            {hasMoreAnswers && (
-              <Button variant="ghost" size="sm" onClick={() => setShowAllAnswers(!showAllAnswers)}
-                className="flex items-center space-x-1 text-muted-foreground">
-                {showAllAnswers ? <><ChevronUp className="h-4 w-4" /><span>Show Less</span></> :
-                  <><ChevronDown className="h-4 w-4" /><span>Show All {post.answers.length} Comments</span></>}
-              </Button>
-            )}
+            <CommentThread
+              comments={commentTree}
+              postId={post.id}
+              onLike={onAnswerLike}
+              onReply={(pid, content, parentId) => onAddAnswer(pid, content, parentId)}
+              canInteract={canInteract}
+            />
           </div>
         )}
       </div>
