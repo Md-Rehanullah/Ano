@@ -1,3 +1,9 @@
 project_id = "ohvtqsjyvfctjapqpbtf"
 
 [functions]
+
+[functions.delete-account]
+verify_jwt = false
+
+[functions.check-link-safety]
+verify_jwt = false
