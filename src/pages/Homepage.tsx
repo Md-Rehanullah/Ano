@@ -202,6 +202,7 @@ const Homepage = () => {
 
   return (
     <Layout>
+      <OfflineBanner />
       <PullToRefresh onRefresh={handleRefresh} />
       <div className="container mx-auto px-4 py-6 max-w-4xl">
         <CreatePostForm onCreatePost={handleCreatePost} />
@@ -217,7 +218,8 @@ const Homepage = () => {
             {posts.map(post => (
               <PostCard key={post.id} post={post} onLike={handleLike} onReport={handleReport}
                 onAddAnswer={handleAddAnswer} onAnswerLike={handleAnswerLike} onBookmark={handleBookmark}
-                userInteraction={interactions[post.id] || null} isBookmarked={bookmarkedIds.has(post.id)} />
+                userInteraction={interactions[post.id] || null} isBookmarked={bookmarkedIds.has(post.id)}
+                canInteract={isOnline()} />
             ))}
           </div>
         )}
