@@ -11,14 +11,18 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserInteractions } from "@/hooks/useUserInteractions";
 import { supabase } from "@/integrations/supabase/client";
 
+import { saveFeedCache, loadFeedCache, isOnline } from "@/lib/offlineCache";
+import OfflineBanner from "@/components/OfflineBanner";
+
 interface Answer {
   id: string; content: string; likes: number; dislikes: number; replies: Answer[];
-  created_at: string; authorName?: string; authorAvatar?: string;
+  created_at: string; parent_id?: string | null; authorName?: string; authorAvatar?: string;
 }
 interface Post {
   id: string; title: string; description: string; category: string;
   likes: number; dislikes: number; views: number; answers: Answer[];
-  created_at: string; imageUrl?: string; videoUrl?: string;
+  created_at: string; edited_at?: string | null; is_pinned?: boolean;
+  imageUrl?: string; videoUrl?: string;
   authorName?: string; authorAvatar?: string;
   authorUserId?: string | null; isSeed?: boolean;
 }
