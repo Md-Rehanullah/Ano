@@ -4,12 +4,13 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { ThumbsUp, Share2, Flag, MessageCircle, ChevronDown, ChevronUp, Eye, Bookmark, BookmarkCheck } from "lucide-react";
+import { ThumbsUp, Share2, Flag, MessageCircle, Eye, Bookmark, BookmarkCheck, Pin, Pencil } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import UserAvatar from "@/components/UserAvatar";
 import MediaLightbox from "@/components/MediaLightbox";
 import VideoPlayer from "@/components/VideoPlayer";
+import CommentThread, { buildCommentTree, Comment } from "@/components/CommentThread";
 
 interface Answer {
   id: string;
@@ -18,6 +19,7 @@ interface Answer {
   dislikes: number;
   replies: Answer[];
   created_at: string;
+  parent_id?: string | null;
   authorName?: string;
   authorAvatar?: string;
 }
@@ -32,6 +34,8 @@ interface Post {
   views: number;
   answers: Answer[];
   created_at: string;
+  edited_at?: string | null;
+  is_pinned?: boolean;
   imageUrl?: string;
   videoUrl?: string;
   authorName?: string;
@@ -44,18 +48,19 @@ interface PostCardProps {
   post: Post;
   onLike: (postId: string) => void;
   onReport: (postId: string, reason: string) => void;
-  onAddAnswer: (postId: string, answer: string) => void;
+  onAddAnswer: (postId: string, answer: string, parentId?: string | null) => void;
   onAnswerLike?: (answerId: string) => void;
   onBookmark?: (postId: string) => void;
   userInteraction?: 'like' | 'dislike' | null;
   isBookmarked?: boolean;
+  /** True when the user can react/comment (online + signed-in flow handled by parent). */
+  canInteract?: boolean;
 }
 
 // ~350 words ≈ 2300 chars
 const READ_MORE_THRESHOLD = 2300;
 
-const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmark, userInteraction, isBookmarked }: PostCardProps) => {
-  const [showAllAnswers, setShowAllAnswers] = useState(false);
+const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmark, userInteraction, isBookmarked, canInteract = true }: PostCardProps) => {
   const [newAnswer, setNewAnswer] = useState("");
   const [showAnswerForm, setShowAnswerForm] = useState(false);
   const [reportReason, setReportReason] = useState("");
@@ -70,8 +75,18 @@ const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmar
     ? post.description.slice(0, READ_MORE_THRESHOLD).trimEnd() + "…"
     : post.description;
 
-  const displayedAnswers = showAllAnswers ? post.answers : post.answers.slice(0, 4);
-  const hasMoreAnswers = post.answers.length > 4;
+  // Build a tree from the flat answers list (parent_id-aware nested replies)
+  const flatComments: Comment[] = post.answers.map(a => ({
+    id: a.id,
+    content: a.content,
+    likes: a.likes,
+    dislikes: a.dislikes,
+    created_at: a.created_at,
+    parent_id: a.parent_id ?? null,
+    authorName: a.authorName,
+    authorAvatar: a.authorAvatar,
+  }));
+  const commentTree = buildCommentTree(flatComments);
 
   const openAuthorProfile = () => {
     if (post.isSeed) {
@@ -122,17 +137,29 @@ const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmar
             <UserAvatar src={post.authorAvatar} name={post.authorName} className="h-9 w-9 flex-shrink-0 mt-0.5" fallbackClassName="text-xs" />
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between mb-1">
-                <div>
+                <div className="flex items-center gap-1.5 flex-wrap">
                   <span className="text-sm font-medium text-foreground hover:text-primary transition-colors">{post.authorName || "Anonymous"}</span>
-                  <span className="text-xs text-muted-foreground ml-2">
+                  <span className="text-xs text-muted-foreground">
                     {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
                   </span>
+                  {post.edited_at && (
+                    <span className="text-[10px] text-muted-foreground italic flex items-center gap-0.5">
+                      <Pencil className="h-2.5 w-2.5" /> edited
+                    </span>
+                  )}
                 </div>
               </div>
               <h3 className="text-base sm:text-lg font-semibold">{post.title}</h3>
             </div>
           </button>
-          <Badge variant="secondary" className="text-[10px] ml-2 shrink-0">{post.category}</Badge>
+          <div className="flex items-center gap-1 ml-2 shrink-0">
+            {post.is_pinned && (
+              <Badge variant="default" className="text-[10px] gap-1">
+                <Pin className="h-2.5 w-2.5" /> Pinned
+              </Badge>
+            )}
+            <Badge variant="secondary" className="text-[10px]">{post.category}</Badge>
+          </div>
         </div>
 
         {/* Content Box */}
@@ -229,35 +256,19 @@ const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmar
           </div>
         )}
 
-        {/* Comments Section */}
+        {/* Nested comments */}
         {post.answers.length > 0 && (
           <div className="space-y-3 border-t pt-3">
             <h4 className="font-medium text-sm">
               {post.answers.length} {post.answers.length === 1 ? 'Comment' : 'Comments'}
             </h4>
-            {displayedAnswers.map((answer) => (
-              <div key={answer.id} className="p-3 bg-muted/30 rounded-lg">
-                <div className="flex items-center gap-2 mb-2">
-                  <UserAvatar src={answer.authorAvatar} name={answer.authorName} className="h-6 w-6" fallbackClassName="text-[10px]" />
-                  <span className="text-xs font-medium">{answer.authorName || "Anonymous"}</span>
-                </div>
-                <p className="text-sm mb-2">{answer.content}</p>
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <button className="flex items-center space-x-1 hover:text-primary transition-colors cursor-pointer"
-                    onClick={() => onAnswerLike?.(answer.id)}>
-                    <ThumbsUp className="h-3 w-3" /><span>{answer.likes}</span>
-                  </button>
-                  <span>{formatDistanceToNow(new Date(answer.created_at), { addSuffix: true })}</span>
-                </div>
-              </div>
-            ))}
-            {hasMoreAnswers && (
-              <Button variant="ghost" size="sm" onClick={() => setShowAllAnswers(!showAllAnswers)}
-                className="flex items-center space-x-1 text-muted-foreground">
-                {showAllAnswers ? <><ChevronUp className="h-4 w-4" /><span>Show Less</span></> :
-                  <><ChevronDown className="h-4 w-4" /><span>Show All {post.answers.length} Comments</span></>}
-              </Button>
-            )}
+            <CommentThread
+              comments={commentTree}
+              postId={post.id}
+              onLike={onAnswerLike}
+              onReply={(pid, content, parentId) => onAddAnswer(pid, content, parentId)}
+              canInteract={canInteract}
+            />
           </div>
         )}
       </div>

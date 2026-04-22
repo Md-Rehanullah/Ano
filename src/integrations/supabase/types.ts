@@ -56,6 +56,7 @@ export type Database = {
           dislikes: number
           id: string
           likes: number
+          parent_id: string | null
           post_id: string
           updated_at: string
           user_id: string | null
@@ -66,6 +67,7 @@ export type Database = {
           dislikes?: number
           id?: string
           likes?: number
+          parent_id?: string | null
           post_id: string
           updated_at?: string
           user_id?: string | null
@@ -76,11 +78,19 @@ export type Database = {
           dislikes?: number
           id?: string
           likes?: number
+          parent_id?: string | null
           post_id?: string
           updated_at?: string
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "answers_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "answers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "answers_post_id_fkey"
             columns: ["post_id"]
@@ -152,14 +162,47 @@ export type Database = {
         }
         Relationships: []
       }
+      moderation_log: {
+        Row: {
+          action: string
+          actor_id: string
+          created_at: string
+          details: Json | null
+          id: string
+          target_id: string | null
+          target_type: string | null
+        }
+        Insert: {
+          action: string
+          actor_id: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          target_id?: string | null
+          target_type?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          target_id?: string | null
+          target_type?: string | null
+        }
+        Relationships: []
+      }
       posts: {
         Row: {
           category: string
           created_at: string
           description: string
           dislikes: number
+          edited_at: string | null
           id: string
           image_url: string | null
+          is_hidden: boolean
+          is_pinned: boolean
           is_seed: boolean
           likes: number
           seed_author_name: string | null
@@ -174,8 +217,11 @@ export type Database = {
           created_at?: string
           description: string
           dislikes?: number
+          edited_at?: string | null
           id?: string
           image_url?: string | null
+          is_hidden?: boolean
+          is_pinned?: boolean
           is_seed?: boolean
           likes?: number
           seed_author_name?: string | null
@@ -190,8 +236,11 @@ export type Database = {
           created_at?: string
           description?: string
           dislikes?: number
+          edited_at?: string | null
           id?: string
           image_url?: string | null
+          is_hidden?: boolean
+          is_pinned?: boolean
           is_seed?: boolean
           likes?: number
           seed_author_name?: string | null
@@ -271,6 +320,33 @@ export type Database = {
           },
         ]
       }
+      user_bans: {
+        Row: {
+          banned_by: string
+          banned_until: string | null
+          created_at: string
+          id: string
+          reason: string
+          user_id: string
+        }
+        Insert: {
+          banned_by: string
+          banned_until?: string | null
+          created_at?: string
+          id?: string
+          reason: string
+          user_id: string
+        }
+        Update: {
+          banned_by?: string
+          banned_until?: string | null
+          created_at?: string
+          id?: string
+          reason?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_guide_seen: {
         Row: {
           id: string
@@ -337,6 +413,33 @@ export type Database = {
         }
         Relationships: []
       }
+      user_warnings: {
+        Row: {
+          acknowledged: boolean
+          created_at: string
+          id: string
+          issued_by: string
+          message: string
+          user_id: string
+        }
+        Insert: {
+          acknowledged?: boolean
+          created_at?: string
+          id?: string
+          issued_by: string
+          message: string
+          user_id: string
+        }
+        Update: {
+          acknowledged?: boolean
+          created_at?: string
+          id?: string
+          issued_by?: string
+          message?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -368,6 +471,7 @@ export type Database = {
         | { Args: { post_id: string }; Returns: undefined }
         | { Args: { post_id: string; user_id: string }; Returns: undefined }
       increment_post_views: { Args: { p_post_id: string }; Returns: undefined }
+      is_banned: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
