@@ -60,8 +60,7 @@ interface PostCardProps {
 // ~350 words ≈ 2300 chars
 const READ_MORE_THRESHOLD = 2300;
 
-const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmark, userInteraction, isBookmarked }: PostCardProps) => {
-  const [showAllAnswers, setShowAllAnswers] = useState(false);
+const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmark, userInteraction, isBookmarked, canInteract = true }: PostCardProps) => {
   const [newAnswer, setNewAnswer] = useState("");
   const [showAnswerForm, setShowAnswerForm] = useState(false);
   const [reportReason, setReportReason] = useState("");
@@ -76,8 +75,18 @@ const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmar
     ? post.description.slice(0, READ_MORE_THRESHOLD).trimEnd() + "…"
     : post.description;
 
-  const displayedAnswers = showAllAnswers ? post.answers : post.answers.slice(0, 4);
-  const hasMoreAnswers = post.answers.length > 4;
+  // Build a tree from the flat answers list (parent_id-aware nested replies)
+  const flatComments: Comment[] = post.answers.map(a => ({
+    id: a.id,
+    content: a.content,
+    likes: a.likes,
+    dislikes: a.dislikes,
+    created_at: a.created_at,
+    parent_id: a.parent_id ?? null,
+    authorName: a.authorName,
+    authorAvatar: a.authorAvatar,
+  }));
+  const commentTree = buildCommentTree(flatComments);
 
   const openAuthorProfile = () => {
     if (post.isSeed) {
