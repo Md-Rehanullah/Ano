@@ -14,6 +14,7 @@ import Contact from "./pages/Contact";
 import Collaborate from "./pages/Collaborate";
 import Auth from "./pages/Auth";
 import Signup from "./pages/Signup";
+import ResetPassword from "./pages/ResetPassword";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import AdminDashboard from "./pages/AdminDashboard";
 import UserProfile, { PrivateProfile } from "./pages/UserProfile";
@@ -43,6 +44,7 @@ const App = () => (
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/signup" element={<Signup />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </HashRouter>

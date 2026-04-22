@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import CreatePostForm from "@/components/CreatePostForm";
 import PostCard from "@/components/PostCard";
 import PostCardSkeleton from "@/components/PostCardSkeleton";
 import FirstTimeGuide from "@/components/FirstTimeGuide";
+import PullToRefresh from "@/components/PullToRefresh";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserInteractions } from "@/hooks/useUserInteractions";
@@ -34,6 +35,24 @@ const Homepage = () => {
 
   useEffect(() => { fetchPosts(); }, []);
   useEffect(() => { if (user) fetchBookmarks(); }, [user]);
+
+  // Optimistically prepend posts created via the floating action button (no reload).
+  useEffect(() => {
+    const onNewPost = (e: Event) => {
+      const data = (e as CustomEvent).detail;
+      if (!data?.id) return;
+      const newPost: Post = {
+        id: data.id, title: data.title, description: data.description, category: data.category,
+        likes: data.likes ?? 0, dislikes: data.dislikes ?? 0, views: 0,
+        imageUrl: data.image_url, videoUrl: data.video_url, created_at: data.created_at,
+        answers: [], authorUserId: data.user_id,
+      };
+      setPosts(prev => prev.some(p => p.id === newPost.id) ? prev : [newPost, ...prev]);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+    window.addEventListener("bridge:new-post", onNewPost as EventListener);
+    return () => window.removeEventListener("bridge:new-post", onNewPost as EventListener);
+  }, []);
 
   const fetchBookmarks = async () => {
     if (!user) return;
@@ -144,8 +163,14 @@ const Homepage = () => {
     }
   };
 
+  const handleRefresh = useCallback(async () => {
+    await Promise.all([fetchPosts(), user ? fetchBookmarks() : Promise.resolve()]);
+    toast({ title: "Feed updated", description: "Showing the latest posts." });
+  }, [user]);
+
   return (
     <Layout>
+      <PullToRefresh onRefresh={handleRefresh} />
       <div className="container mx-auto px-4 py-6 max-w-4xl">
         <CreatePostForm onCreatePost={handleCreatePost} />
         <h2 className="text-lg font-semibold text-muted-foreground mb-4">Recent Posts (Last 10 Days)</h2>

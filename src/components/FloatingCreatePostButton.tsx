@@ -79,19 +79,20 @@ const FloatingCreatePostButton = ({ onCreatePost }: Props) => {
     if (!user) { navigate("/auth"); return; }
     setIsPosting(true);
     try {
-      const { error } = await supabase.from("posts").insert({
+      const { data, error } = await supabase.from("posts").insert({
         user_id: user.id,
         title: newPost.title,
         description: newPost.description,
         category: newPost.category,
         image_url: newPost.imageUrl,
         video_url: newPost.videoUrl,
-      });
+      }).select().single();
       if (error) throw error;
       toast({ title: "Post created!" });
-      // Navigate home so the user sees it; if already on home/all-posts the page will refresh
-      if (location.pathname === "/") window.location.reload();
-      else navigate("/");
+      // Notify any listening feed (Homepage) to prepend the new post optimistically — no reload.
+      window.dispatchEvent(new CustomEvent("bridge:new-post", { detail: data }));
+      // If we're not already on the home feed, navigate there so the user sees it.
+      if (location.pathname !== "/") navigate("/");
     } catch (e) {
       toast({ title: "Failed to create post", variant: "destructive" });
     } finally {
