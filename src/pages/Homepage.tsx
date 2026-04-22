@@ -65,17 +65,35 @@ const Homepage = () => {
   };
 
   const fetchPosts = async () => {
+    if (!isOnline()) {
+      const cached = loadFeedCache();
+      if (cached) {
+        setPosts(cached.posts as any);
+        toast({ title: "Offline", description: "Showing cached posts." });
+      }
+      setIsLoading(false);
+      return;
+    }
     try {
       setIsLoading(true);
       const tenDaysAgo = new Date();
       tenDaysAgo.setDate(tenDaysAgo.getDate() - 10);
-      // Include posts from the last 10 days OR any seed/demo post (is_seed=true) so the homepage stays full
       const { data, error } = await supabase
         .from('posts')
         .select('*, answers(*)')
         .or(`created_at.gte.${tenDaysAgo.toISOString()},is_seed.eq.true`)
+        .order('is_pinned', { ascending: false })
         .order('created_at', { ascending: false });
-      if (error) { toast({ title: "Error", description: "Failed to load posts.", variant: "destructive" }); return; }
+      if (error) {
+        const cached = loadFeedCache();
+        if (cached) {
+          setPosts(cached.posts as any);
+          toast({ title: "Showing cached posts", description: "Couldn't reach the server." });
+        } else {
+          toast({ title: "Error", description: "Failed to load posts.", variant: "destructive" });
+        }
+        return;
+      }
 
       const userIds = [...new Set([...data.map((p: any) => p.user_id), ...data.flatMap((p: any) => p.answers.map((a: any) => a.user_id))].filter(Boolean))];
       let profilesMap: Record<string, any> = {};
@@ -84,25 +102,32 @@ const Homepage = () => {
         if (profiles) profilesMap = Object.fromEntries(profiles.map(p => [p.user_id, p]));
       }
 
-      // Increment views for all fetched posts
       for (const post of data) {
         supabase.rpc('increment_post_views', { p_post_id: post.id }).then();
       }
 
-      setPosts(data.map((post: any) => ({
+      const mapped: Post[] = data.map((post: any) => ({
         id: post.id, title: post.title, description: post.description, category: post.category,
         likes: post.likes, dislikes: post.dislikes, views: (post.views || 0) + 1,
         imageUrl: post.image_url, videoUrl: post.video_url, created_at: post.created_at,
+        edited_at: post.edited_at, is_pinned: post.is_pinned,
         authorName: profilesMap[post.user_id]?.display_name || post.seed_author_name || null,
         authorAvatar: profilesMap[post.user_id]?.avatar_url || null,
         authorUserId: post.user_id, isSeed: post.is_seed,
         answers: post.answers.map((a: any) => ({
-          id: a.id, content: a.content, likes: a.likes, dislikes: a.dislikes, replies: [], created_at: a.created_at,
+          id: a.id, content: a.content, likes: a.likes, dislikes: a.dislikes, replies: [],
+          created_at: a.created_at, parent_id: a.parent_id ?? null,
           authorName: profilesMap[a.user_id]?.display_name || null,
           authorAvatar: profilesMap[a.user_id]?.avatar_url || null,
         }))
-      })));
-    } catch { toast({ title: "Error", description: "Failed to load posts.", variant: "destructive" }); }
+      }));
+      setPosts(mapped);
+      saveFeedCache(mapped as any);
+    } catch {
+      const cached = loadFeedCache();
+      if (cached) setPosts(cached.posts as any);
+      else toast({ title: "Error", description: "Failed to load posts.", variant: "destructive" });
+    }
     finally { setIsLoading(false); }
   };
 
