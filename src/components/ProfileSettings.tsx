@@ -220,6 +220,53 @@ const ProfileSettings = ({ userId, email, displayName, avatarUrl, bio, onUpdate 
             </Button>
           </div>
         </div>
+
+        {/* Danger Zone */}
+        <div className="pt-6 mt-2 border-t">
+          <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-4 space-y-3">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="h-4 w-4 text-destructive mt-0.5" />
+              <div>
+                <p className="text-sm font-semibold text-destructive">Delete account</p>
+                <p className="text-xs text-muted-foreground">
+                  Permanently remove your account, posts, comments, bookmarks and profile. This cannot be undone.
+                </p>
+              </div>
+            </div>
+            <AlertDialog onOpenChange={(o) => { if (!o) setConfirmText(""); }}>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm" className="w-full sm:w-auto">
+                  <Trash2 className="h-4 w-4 mr-2" /> Delete my account
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently delete your account and all of your content. Type{" "}
+                    <span className="font-mono font-semibold text-destructive">DELETE</span> to confirm.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <Input
+                  value={confirmText}
+                  onChange={(e) => setConfirmText(e.target.value)}
+                  placeholder='Type "DELETE" to confirm'
+                  autoFocus
+                />
+                <AlertDialogFooter>
+                  <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={(e) => { e.preventDefault(); handleDeleteAccount(); }}
+                    disabled={isDeleting || confirmText !== "DELETE"}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    {isDeleting ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Deleting...</> : "Delete forever"}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        </div>
       </div>
     </Card>
   );
