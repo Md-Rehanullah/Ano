@@ -13,6 +13,8 @@ import { supabase } from "@/integrations/supabase/client";
 
 import { saveFeedCache, loadFeedCache, isOnline } from "@/lib/offlineCache";
 import OfflineBanner from "@/components/OfflineBanner";
+import WeeklyLeaderboard from "@/components/WeeklyLeaderboard";
+import type { CreatePostPayload } from "@/components/CreatePostForm";
 
 interface Answer {
   id: string; content: string; likes: number; dislikes: number; replies: Answer[];
@@ -131,7 +133,7 @@ const Homepage = () => {
     finally { setIsLoading(false); }
   };
 
-  const handleCreatePost = async (newPostData: { title: string; description: string; category: string; imageUrl?: string; videoUrl?: string }) => {
+  const handleCreatePost = async (newPostData: CreatePostPayload) => {
     if (!user) { navigate('/auth'); return; }
     try {
       const { data, error } = await supabase.from('posts').insert({
@@ -139,6 +141,22 @@ const Homepage = () => {
         category: newPostData.category, image_url: newPostData.imageUrl, video_url: newPostData.videoUrl
       }).select().single();
       if (error) throw error;
+
+      // Optionally attach a poll
+      if (newPostData.poll) {
+        const { data: pollRow, error: pollErr } = await supabase
+          .from('polls' as any)
+          .insert({ post_id: data.id, question: newPostData.poll.question })
+          .select('id')
+          .single();
+        if (!pollErr && pollRow) {
+          const optionsPayload = newPostData.poll.options.map((label, i) => ({
+            poll_id: (pollRow as any).id, label, position: i,
+          }));
+          await supabase.from('poll_options' as any).insert(optionsPayload);
+        }
+      }
+
       const newPost: Post = {
         id: data.id, title: data.title, description: data.description, category: data.category,
         likes: data.likes, dislikes: data.dislikes, views: 0, imageUrl: data.image_url,
@@ -206,6 +224,7 @@ const Homepage = () => {
       <PullToRefresh onRefresh={handleRefresh} />
       <div className="container mx-auto px-4 py-6 max-w-4xl">
         <CreatePostForm onCreatePost={handleCreatePost} />
+        <WeeklyLeaderboard />
         <h2 className="text-lg font-semibold text-muted-foreground mb-4">Recent Posts (Last 10 Days)</h2>
         {isLoading ? (
           <div className="space-y-6">{[...Array(3)].map((_, i) => <PostCardSkeleton key={i} />)}</div>
