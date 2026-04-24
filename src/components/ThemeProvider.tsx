@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react"
 
-type Theme = "dark" | "light" | "system"
+type Theme = "dark" | "light" | "system" | "amoled"
 
 type ThemeProviderProps = {
   children: React.ReactNode
@@ -33,15 +33,19 @@ export function ThemeProvider({
   useEffect(() => {
     const root = window.document.documentElement
 
-    root.classList.remove("light", "dark")
+    root.classList.remove("light", "dark", "amoled")
 
     if (theme === "system") {
-      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
-        .matches
+      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches
         ? "dark"
         : "light"
-
       root.classList.add(systemTheme)
+      return
+    }
+
+    if (theme === "amoled") {
+      // amoled extends dark — apply both so dark-only selectors still work
+      root.classList.add("dark", "amoled")
       return
     }
 
