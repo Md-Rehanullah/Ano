@@ -4,6 +4,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ThumbsUp, MessageCircle, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import UserAvatar from "@/components/UserAvatar";
+import MarkdownContent from "@/components/MarkdownContent";
 import { cn } from "@/lib/utils";
 
 export interface Comment {
@@ -87,7 +88,7 @@ const CommentNode = ({ comment, postId, depth = 0, onLike, onReply, canInteract 
           )}
         </div>
 
-        <p className="text-sm mb-2 whitespace-pre-wrap break-words">{comment.content}</p>
+        <div className="mb-2"><MarkdownContent className="text-sm">{comment.content}</MarkdownContent></div>
 
         <div className="flex items-center gap-1 text-xs text-muted-foreground">
           <button

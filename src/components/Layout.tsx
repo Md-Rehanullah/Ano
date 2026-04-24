@@ -1,5 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
-import { Moon, Sun, LogIn, LogOut, User, Menu, ArrowUp, CheckCircle, Home, FileText, Info, Mail, Users, Download, Bookmark, Shield, LayoutDashboard } from "lucide-react";
+import { Moon, Sun, LogIn, LogOut, User, Menu, ArrowUp, CheckCircle, Home, FileText, Info, Mail, Users, Download, Bookmark, Shield, LayoutDashboard, Smartphone } from "lucide-react";
+import NotificationBell from "@/components/NotificationBell";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/ThemeProvider";
 import { useAuth } from "@/hooks/useAuth";
@@ -140,6 +142,7 @@ const Layout = ({ children }: LayoutProps) => {
               <Link to="/" className="text-xl font-bold text-primary hover:opacity-80 transition-opacity">Bridge</Link>
             </div>
             <div className="flex items-center space-x-2">
+              {user && <NotificationBell />}
               {user ? (
                 <Link to="/profile" className="flex items-center space-x-2 bg-primary/10 px-2 py-1 rounded-full border border-primary/20 hover:bg-primary/20 transition-colors">
                   <div className="relative">
@@ -151,10 +154,28 @@ const Layout = ({ children }: LayoutProps) => {
               ) : (
                 <Link to="/auth"><Button variant="outline" size="sm" className="flex items-center space-x-1"><LogIn className="h-4 w-4" /><span className="hidden sm:inline">Sign In</span></Button></Link>
               )}
-              <Button variant="ghost" size="sm" onClick={() => setTheme(theme === "light" ? "dark" : "light")} className="h-9 w-9 p-0">
-                <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-                <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-9 w-9 p-0" aria-label="Theme">
+                    <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                    <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setTheme("light")}>
+                    <Sun className="h-4 w-4 mr-2" /> Light {theme === "light" && "✓"}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setTheme("dark")}>
+                    <Moon className="h-4 w-4 mr-2" /> Dark {theme === "dark" && "✓"}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setTheme("amoled")}>
+                    <Smartphone className="h-4 w-4 mr-2" /> AMOLED {theme === "amoled" && "✓"}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setTheme("system")}>
+                    System {theme === "system" && "✓"}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </div>

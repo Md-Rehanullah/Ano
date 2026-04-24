@@ -60,7 +60,8 @@
     --sidebar-ring: 200 80% 40%;
   }
 
-  .dark {
+  .dark,
+  .amoled {
     --background: 220 20% 8%;
     --foreground: 210 20% 95%;
 
@@ -106,6 +107,21 @@
     --sidebar-accent-foreground: 210 20% 90%;
     --sidebar-border: 220 16% 14%;
     --sidebar-ring: 200 70% 55%;
+  }
+
+  /* AMOLED — pure black background for OLED screens, otherwise inherits .dark */
+  .amoled {
+    --background: 0 0% 0%;
+    --card: 0 0% 4%;
+    --popover: 0 0% 4%;
+    --secondary: 0 0% 8%;
+    --muted: 0 0% 8%;
+    --accent: 200 50% 10%;
+    --border: 0 0% 12%;
+    --input: 0 0% 12%;
+    --sidebar-background: 0 0% 0%;
+    --sidebar-accent: 0 0% 6%;
+    --sidebar-border: 0 0% 10%;
   }
 }
 

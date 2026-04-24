@@ -11,6 +11,8 @@ import UserAvatar from "@/components/UserAvatar";
 import MediaLightbox from "@/components/MediaLightbox";
 import VideoPlayer from "@/components/VideoPlayer";
 import CommentThread, { buildCommentTree, Comment } from "@/components/CommentThread";
+import MarkdownContent from "@/components/MarkdownContent";
+import PollBlock from "@/components/PollBlock";
 
 interface Answer {
   id: string;
@@ -164,7 +166,7 @@ const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmar
 
         {/* Content Box */}
         <div className="bg-muted/30 rounded-lg p-3 sm:p-4">
-          <p className="text-sm sm:text-base text-foreground/90 whitespace-pre-wrap">{visibleDescription}</p>
+          <MarkdownContent>{visibleDescription}</MarkdownContent>
           {isLong && (
             <button
               type="button"
@@ -175,6 +177,10 @@ const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmar
             </button>
           )}
         </div>
+
+        {/* Poll (if any) */}
+        <PollBlock postId={post.id} />
+
 
         {/* Media */}
         {post.imageUrl && !post.videoUrl && (
