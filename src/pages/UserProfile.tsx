@@ -9,6 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Lock, FileText, MessageCircle, ThumbsUp, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
+import KarmaBadges from "@/components/KarmaBadges";
+import type { KarmaStats } from "@/lib/badges";
 
 interface ProfileData {
   display_name: string | null;
@@ -24,6 +26,7 @@ const UserProfile = () => {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [posts, setPosts] = useState<PostItem[]>([]);
   const [answers, setAnswers] = useState<AnswerItem[]>([]);
+  const [karma, setKarma] = useState<KarmaStats>({ posts: 0, likes: 0, answers: 0, karma: 0 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -58,6 +61,19 @@ const UserProfile = () => {
         }))
       );
 
+      const { data: karmaRow } = await supabase
+        .from("user_karma" as any)
+        .select("posts_count, likes_received, karma")
+        .eq("user_id", userId)
+        .maybeSingle();
+      const ansCount = (answersData || []).length;
+      setKarma({
+        posts: (karmaRow as any)?.posts_count || 0,
+        likes: (karmaRow as any)?.likes_received || 0,
+        answers: ansCount,
+        karma: (karmaRow as any)?.karma || 0,
+      });
+
       setLoading(false);
     })();
   }, [userId]);
@@ -87,6 +103,9 @@ const UserProfile = () => {
                 <Badge variant="secondary" className="gap-1"><ThumbsUp className="h-3 w-3" />{totalLikes} Likes</Badge>
               </div>
             </div>
+          </div>
+          <div className="mt-5 pt-4 border-t">
+            <KarmaBadges stats={karma} />
           </div>
         </Card>
 
