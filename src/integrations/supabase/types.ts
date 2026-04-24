@@ -192,6 +192,140 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          actor_id: string | null
+          answer_id: string | null
+          created_at: string
+          id: string
+          link: string | null
+          message: string
+          post_id: string | null
+          read: boolean
+          type: string
+          user_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          answer_id?: string | null
+          created_at?: string
+          id?: string
+          link?: string | null
+          message: string
+          post_id?: string | null
+          read?: boolean
+          type: string
+          user_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          answer_id?: string | null
+          created_at?: string
+          id?: string
+          link?: string | null
+          message?: string
+          post_id?: string | null
+          read?: boolean
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      poll_options: {
+        Row: {
+          created_at: string
+          id: string
+          label: string
+          poll_id: string
+          position: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label: string
+          poll_id: string
+          position?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string
+          poll_id?: string
+          position?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "poll_options_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "polls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      poll_votes: {
+        Row: {
+          created_at: string
+          id: string
+          option_id: string
+          poll_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          option_id: string
+          poll_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          option_id?: string
+          poll_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "poll_votes_option_id_fkey"
+            columns: ["option_id"]
+            isOneToOne: false
+            referencedRelation: "poll_options"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "poll_votes_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "polls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      polls: {
+        Row: {
+          closes_at: string | null
+          created_at: string
+          id: string
+          post_id: string
+          question: string
+        }
+        Insert: {
+          closes_at?: string | null
+          created_at?: string
+          id?: string
+          post_id: string
+          question: string
+        }
+        Update: {
+          closes_at?: string | null
+          created_at?: string
+          id?: string
+          post_id?: string
+          question?: string
+        }
+        Relationships: []
+      }
       posts: {
         Row: {
           category: string
@@ -320,6 +454,27 @@ export type Database = {
           },
         ]
       }
+      user_badges: {
+        Row: {
+          awarded_at: string
+          badge_key: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          awarded_at?: string
+          badge_key: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          awarded_at?: string
+          badge_key?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_bans: {
         Row: {
           banned_by: string
@@ -442,7 +597,27 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      user_karma: {
+        Row: {
+          karma: number | null
+          likes_received: number | null
+          posts_count: number | null
+          user_id: string | null
+          views_received: number | null
+        }
+        Relationships: []
+      }
+      weekly_leaderboard: {
+        Row: {
+          avatar_url: string | null
+          display_name: string | null
+          likes_this_week: number | null
+          posts_this_week: number | null
+          user_id: string | null
+          week_score: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       get_user_interaction: {
