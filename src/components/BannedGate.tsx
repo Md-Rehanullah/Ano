@@ -108,7 +108,30 @@ const BannedGate = () => {
             <LogOut className="h-4 w-4 mr-2" /> Sign out of this account
           </Button>
           <AlertDialogAction asChild>
-            <Button variant="outline" className="w-full" onClick={() => window.location.href = "/#/contact"}>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => {
+                const email = user.email || "";
+                const subject = permanent
+                  ? "Appeal: my account has been banned"
+                  : "Appeal: my account has been suspended";
+                const body = [
+                  `Hello Bridge support team,`,
+                  ``,
+                  `My account (${email}) has been ${permanent ? "permanently banned" : `suspended${durationText ? ` for ${durationText}` : ""}`}.`,
+                  ``,
+                  `Reason given: ${ban.reason?.trim() || "No reason provided."}`,
+                  ``,
+                  `I would like to appeal this decision because:`,
+                  ``,
+                ].join("\n");
+
+                const params = new URLSearchParams({ email, subject, message: body });
+                // HashRouter: query goes after the hash route
+                window.location.hash = `#/contact?${params.toString()}`;
+              }}
+            >
               Contact support
             </Button>
           </AlertDialogAction>
