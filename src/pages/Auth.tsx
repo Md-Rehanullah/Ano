@@ -32,7 +32,7 @@ const GitHubIcon = () => (
 const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [displayName, setDisplayName] = useState("");
+  
   const [loading, setLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
@@ -50,20 +50,6 @@ const Auth = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email || !password) { toast({ title: "Error", description: "Please fill in all fields", variant: "destructive" }); return; }
-    setLoading(true);
-    try {
-      const { error } = await supabase.auth.signUp({
-        email, password,
-        options: { emailRedirectTo: window.location.origin + '/', data: { display_name: displayName || email.split('@')[0] } }
-      });
-      if (error) toast({ title: "Sign up failed", description: error.message, variant: "destructive" });
-      else toast({ title: "Check your email", description: "We've sent you a confirmation link." });
-    } catch { toast({ title: "Error", description: "An unexpected error occurred", variant: "destructive" }); }
-    finally { setLoading(false); }
-  };
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
