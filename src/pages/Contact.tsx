@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { z } from "zod";
 import Layout from "@/components/Layout";
 import { Card } from "@/components/ui/card";
@@ -26,6 +27,19 @@ const Contact = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
+  const location = useLocation();
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const n = params.get("name");
+    const e = params.get("email");
+    const s = params.get("subject");
+    const m = params.get("message");
+    if (n) setName(n);
+    if (e) setEmail(e);
+    if (s) setSubject(s);
+    if (m) setMessage(m);
+  }, [location.search]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
