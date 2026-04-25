@@ -30,6 +30,7 @@ const App = () => (
         <TooltipProvider>
           <Toaster />
           <Sonner />
+          <BannedGate />
           <HashRouter>
             <Routes>
               <Route path="/" element={<Homepage />} />
