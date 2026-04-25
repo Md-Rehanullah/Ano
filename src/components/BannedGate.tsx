@@ -52,9 +52,24 @@ const BannedGate = () => {
   if (!user || !ban) return null;
 
   const permanent = !ban.banned_until;
-  const untilText = ban.banned_until
-    ? `until ${new Date(ban.banned_until).toLocaleString()} (${formatDistanceToNow(new Date(ban.banned_until), { addSuffix: true })})`
-    : "permanently";
+  // Compute remaining time for temporary suspensions
+  let durationText = "";
+  let endsText = "";
+  if (ban.banned_until) {
+    const end = new Date(ban.banned_until);
+    const now = new Date();
+    const msLeft = Math.max(0, end.getTime() - now.getTime());
+    const totalMinutes = Math.floor(msLeft / 60000);
+    const days = Math.floor(totalMinutes / (60 * 24));
+    const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
+    const minutes = totalMinutes % 60;
+    const parts: string[] = [];
+    if (days > 0) parts.push(`${days} day${days === 1 ? "" : "s"}`);
+    if (hours > 0) parts.push(`${hours} hour${hours === 1 ? "" : "s"}`);
+    if (parts.length === 0) parts.push(`${minutes} minute${minutes === 1 ? "" : "s"}`);
+    durationText = parts.join(" and ");
+    endsText = `${end.toLocaleString()} (${formatDistanceToNow(end, { addSuffix: true })})`;
+  }
 
   return (
     <AlertDialog open>
@@ -67,11 +82,16 @@ const BannedGate = () => {
             {permanent ? "Your account has been banned" : "Your account is suspended"}
           </AlertDialogTitle>
           <AlertDialogDescription className="text-center space-y-3">
-            <span className="block">
-              {permanent
-                ? "Your account has been permanently banned from Bridge."
-                : `Your account is temporarily suspended ${untilText}.`}
-            </span>
+            {permanent ? (
+              <span className="block">Your account has been permanently banned from Bridge.</span>
+            ) : (
+              <span className="block space-y-1">
+                <span className="block">
+                  Your account is suspended for <span className="font-semibold text-destructive">{durationText}</span>.
+                </span>
+                <span className="block text-xs text-muted-foreground">Ends on {endsText}</span>
+              </span>
+            )}
             <span className="block bg-muted/50 rounded-md p-3 text-left text-foreground text-sm">
               <span className="font-medium block mb-1">Reason for {permanent ? "ban" : "suspension"}:</span>
               <span className="block whitespace-pre-wrap">{ban.reason?.trim() || "No reason was provided by the moderator."}</span>
