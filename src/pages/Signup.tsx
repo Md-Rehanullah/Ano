@@ -9,6 +9,10 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { X } from "lucide-react";
 
+// Always use the public web origin for email verification redirects so links work
+// from any device (mobile email apps, desktop browsers, etc.) — never a dev/preview URL.
+const PUBLIC_WEB_ORIGIN = "https://bridge99.lovable.app";
+
 const GoogleIcon = () => (
   <svg className="w-5 h-5" viewBox="0 0 24 24">
     <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -64,7 +68,7 @@ const Signup = () => {
         email,
         password,
         options: {
-          emailRedirectTo: window.location.origin + '/',
+          emailRedirectTo: PUBLIC_WEB_ORIGIN + '/',
           data: { display_name: displayName || email.split('@')[0] },
         },
       });
