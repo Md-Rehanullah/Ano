@@ -19,6 +19,7 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import AdminDashboard from "./pages/AdminDashboard";
 import UserProfile, { PrivateProfile } from "./pages/UserProfile";
 import NotFound from "./pages/NotFound";
+import BannedGate from "./components/BannedGate";
 
 const queryClient = new QueryClient();
 
@@ -29,6 +30,7 @@ const App = () => (
         <TooltipProvider>
           <Toaster />
           <Sonner />
+          <BannedGate />
           <HashRouter>
             <Routes>
               <Route path="/" element={<Homepage />} />
