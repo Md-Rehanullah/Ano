@@ -1,11 +1,14 @@
 import { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
+
+// Public web URL used for signup so email verification links always open in a browser
+// (avoids "site cannot be reached" inside the Capacitor mobile app)
+const SIGNUP_WEB_URL = "https://bridge99.lovable.app/#/signup";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
@@ -29,7 +32,7 @@ const GitHubIcon = () => (
 const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [displayName, setDisplayName] = useState("");
+  
   const [loading, setLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
@@ -47,20 +50,6 @@ const Auth = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email || !password) { toast({ title: "Error", description: "Please fill in all fields", variant: "destructive" }); return; }
-    setLoading(true);
-    try {
-      const { error } = await supabase.auth.signUp({
-        email, password,
-        options: { emailRedirectTo: window.location.origin + '/', data: { display_name: displayName || email.split('@')[0] } }
-      });
-      if (error) toast({ title: "Sign up failed", description: error.message, variant: "destructive" });
-      else toast({ title: "Check your email", description: "We've sent you a confirmation link." });
-    } catch { toast({ title: "Error", description: "An unexpected error occurred", variant: "destructive" }); }
-    finally { setLoading(false); }
-  };
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -119,39 +108,30 @@ const Auth = () => {
             <div className="absolute inset-0 flex items-center"><Separator className="w-full" /></div>
             <div className="relative flex justify-center text-xs uppercase"><span className="bg-card px-2 text-muted-foreground">Or continue with email</span></div>
           </div>
-          <Tabs defaultValue="signin" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="signin">Sign In</TabsTrigger>
-              <TabsTrigger value="signup">Sign Up</TabsTrigger>
-            </TabsList>
-            <TabsContent value="signin">
-              {showForgotPassword ? (
-                <form onSubmit={handleForgotPassword} className="space-y-4">
-                  <div className="space-y-2"><Label htmlFor="reset-email">Email</Label><Input id="reset-email" type="email" placeholder="Enter your email" value={email} onChange={(e) => setEmail(e.target.value)} required /></div>
-                  <Button type="submit" className="w-full" disabled={loading}>{loading ? "Sending..." : "Send Reset Link"}</Button>
-                  <Button type="button" variant="ghost" className="w-full" onClick={() => setShowForgotPassword(false)}>Back to Sign In</Button>
-                </form>
-              ) : (
-                <form onSubmit={handleSignIn} className="space-y-4">
-                  <div className="space-y-2"><Label htmlFor="signin-email">Email</Label><Input id="signin-email" type="email" placeholder="Enter your email" value={email} onChange={(e) => setEmail(e.target.value)} required /></div>
-                  <div className="space-y-2"><Label htmlFor="signin-password">Password</Label><Input id="signin-password" type="password" placeholder="Enter your password" value={password} onChange={(e) => setPassword(e.target.value)} required /></div>
-                  <Button type="submit" className="w-full" disabled={loading}>{loading ? "Signing in..." : "Sign In"}</Button>
-                  <Button type="button" variant="link" className="w-full text-sm text-muted-foreground" onClick={() => navigate('/reset-password')}>Forgot Password?</Button>
-                </form>
-              )}
-            </TabsContent>
-            <TabsContent value="signup">
-              <form onSubmit={handleSignUp} className="space-y-4">
-                <div className="space-y-2"><Label htmlFor="signup-name">Display Name (Optional)</Label><Input id="signup-name" type="text" placeholder="How should we call you?" value={displayName} onChange={(e) => setDisplayName(e.target.value)} /></div>
-                <div className="space-y-2"><Label htmlFor="signup-email">Email</Label><Input id="signup-email" type="email" placeholder="Enter your email" value={email} onChange={(e) => setEmail(e.target.value)} required /></div>
-                <div className="space-y-2"><Label htmlFor="signup-password">Password</Label><Input id="signup-password" type="password" placeholder="Create a password" value={password} onChange={(e) => setPassword(e.target.value)} required /></div>
-                <Button type="submit" className="w-full" disabled={loading}>{loading ? "Creating account..." : "Sign Up"}</Button>
-              </form>
-            </TabsContent>
-          </Tabs>
+          {showForgotPassword ? (
+            <form onSubmit={handleForgotPassword} className="space-y-4">
+              <div className="space-y-2"><Label htmlFor="reset-email">Email</Label><Input id="reset-email" type="email" placeholder="Enter your email" value={email} onChange={(e) => setEmail(e.target.value)} required /></div>
+              <Button type="submit" className="w-full" disabled={loading}>{loading ? "Sending..." : "Send Reset Link"}</Button>
+              <Button type="button" variant="ghost" className="w-full" onClick={() => setShowForgotPassword(false)}>Back to Sign In</Button>
+            </form>
+          ) : (
+            <form onSubmit={handleSignIn} className="space-y-4">
+              <div className="space-y-2"><Label htmlFor="signin-email">Email</Label><Input id="signin-email" type="email" placeholder="Enter your email" value={email} onChange={(e) => setEmail(e.target.value)} required /></div>
+              <div className="space-y-2"><Label htmlFor="signin-password">Password</Label><Input id="signin-password" type="password" placeholder="Enter your password" value={password} onChange={(e) => setPassword(e.target.value)} required /></div>
+              <Button type="submit" className="w-full" disabled={loading}>{loading ? "Signing in..." : "Sign In"}</Button>
+              <Button type="button" variant="link" className="w-full text-sm text-muted-foreground" onClick={() => navigate('/reset-password')}>Forgot Password?</Button>
+            </form>
+          )}
           <p className="text-center text-sm text-muted-foreground mt-6">
             Don't have an account?{" "}
-            <Link to="/signup" className="text-primary font-medium hover:underline">Create one</Link>
+            <a
+              href={SIGNUP_WEB_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary font-medium hover:underline"
+            >
+              Create one
+            </a>
           </p>
         </CardContent>
       </Card>
