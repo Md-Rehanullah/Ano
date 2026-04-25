@@ -63,17 +63,23 @@ const BannedGate = () => {
           <div className="mx-auto h-12 w-12 rounded-full bg-destructive/10 flex items-center justify-center mb-2">
             <ShieldAlert className="h-6 w-6 text-destructive" />
           </div>
-          <AlertDialogTitle className="text-center">Your account has been suspended</AlertDialogTitle>
-          <AlertDialogDescription className="text-center space-y-2">
+          <AlertDialogTitle className="text-center">
+            {permanent ? "Your account has been banned" : "Your account is suspended"}
+          </AlertDialogTitle>
+          <AlertDialogDescription className="text-center space-y-3">
             <span className="block">
-              This account is banned {permanent ? "permanently" : untilText}.
+              {permanent
+                ? "Your account has been permanently banned from Bridge."
+                : `Your account is temporarily suspended ${untilText}.`}
             </span>
             <span className="block bg-muted/50 rounded-md p-3 text-left text-foreground text-sm">
-              <span className="font-medium">Reason: </span>
-              {ban.reason || "No reason provided."}
+              <span className="font-medium block mb-1">Reason for {permanent ? "ban" : "suspension"}:</span>
+              <span className="block whitespace-pre-wrap">{ban.reason?.trim() || "No reason was provided by the moderator."}</span>
             </span>
             <span className="block text-xs">
-              You cannot post, comment, or interact while suspended. If you believe this is a mistake, please contact support.
+              {permanent
+                ? "You can no longer post, comment, or interact on this account. If you believe this is a mistake, please contact support."
+                : "You cannot post, comment, or interact until the suspension ends. If you believe this is a mistake, please contact support."}
             </span>
           </AlertDialogDescription>
         </AlertDialogHeader>
