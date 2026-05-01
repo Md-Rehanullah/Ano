@@ -1,10 +1,14 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { ShieldAlert, LogOut } from "lucide-react";
+import { ShieldAlert, LogOut, Mail, Copy } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
+
+const SUPPORT_EMAIL = "atlasthoughthelp@gmail.com";
 
 interface BanInfo {
   reason: string;
@@ -15,6 +19,8 @@ interface BanInfo {
 const BannedGate = () => {
   const { user, signOut } = useAuth();
   const [ban, setBan] = useState<BanInfo | null>(null);
+  const [supportOpen, setSupportOpen] = useState(false);
+  const { toast } = useToast();
 
   const checkBan = async (userId: string) => {
     const { data } = await supabase
@@ -107,36 +113,63 @@ const BannedGate = () => {
           <Button variant="destructive" className="w-full" onClick={() => signOut()}>
             <LogOut className="h-4 w-4 mr-2" /> Sign out of this account
           </Button>
-          <AlertDialogAction asChild>
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => {
-                const email = user.email || "";
-                const subject = permanent
-                  ? "Appeal: my account has been banned"
-                  : "Appeal: my account has been suspended";
-                const body = [
+          <Button variant="outline" className="w-full" onClick={() => setSupportOpen(true)}>
+            <Mail className="h-4 w-4 mr-2" /> Contact support
+          </Button>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+
+      {/* Inline support popup with email */}
+      <Dialog open={supportOpen} onOpenChange={setSupportOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Contact support</DialogTitle>
+            <DialogDescription>
+              Email us with your appeal. Tap the address to open your mail app.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <a
+              href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(
+                permanent ? "Appeal: account banned" : "Appeal: account suspended",
+              )}&body=${encodeURIComponent(
+                [
                   `Hello Bridge support team,`,
                   ``,
-                  `My account (${email}) has been ${permanent ? "permanently banned" : `suspended${durationText ? ` for ${durationText}` : ""}`}.`,
+                  `My account (${user.email || "unknown"}) has been ${
+                    permanent ? "permanently banned" : `suspended${durationText ? ` for ${durationText}` : ""}`
+                  }.`,
                   ``,
                   `Reason given: ${ban.reason?.trim() || "No reason provided."}`,
                   ``,
                   `I would like to appeal this decision because:`,
                   ``,
-                ].join("\n");
-
-                const params = new URLSearchParams({ email, subject, message: body });
-                // HashRouter: query goes after the hash route
-                window.location.hash = `#/contact?${params.toString()}`;
+                ].join("\n"),
+              )}`}
+              className="block w-full text-center rounded-md border p-3 font-medium text-primary hover:bg-muted/50 break-all"
+            >
+              {SUPPORT_EMAIL}
+            </a>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(SUPPORT_EMAIL);
+                  toast({ title: "Email copied" });
+                } catch {
+                  toast({ title: "Couldn't copy", variant: "destructive" });
+                }
               }}
             >
-              Contact support
+              <Copy className="h-4 w-4 mr-2" /> Copy email address
             </Button>
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
+            <p className="text-xs text-muted-foreground text-center">
+              We typically respond within 24–48 hours.
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
     </AlertDialog>
   );
 };

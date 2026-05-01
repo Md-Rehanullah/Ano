@@ -13,6 +13,7 @@ import VideoPlayer from "@/components/VideoPlayer";
 import CommentThread, { buildCommentTree, Comment } from "@/components/CommentThread";
 import MarkdownContent from "@/components/MarkdownContent";
 import PollBlock from "@/components/PollBlock";
+import { checkProfanity } from "@/lib/profanity";
 
 interface Answer {
   id: string;
@@ -117,6 +118,15 @@ const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmar
 
   const handleAddAnswer = () => {
     if (newAnswer.trim()) {
+      const check = checkProfanity(newAnswer);
+      if (!check.ok) {
+        toast({
+          title: "Inappropriate language",
+          description: `Please remove profane or adult content (matched: "${check.match}").`,
+          variant: "destructive",
+        });
+        return;
+      }
       onAddAnswer(post.id, newAnswer);
       setNewAnswer("");
       setShowAnswerForm(false);
@@ -184,8 +194,13 @@ const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmar
 
         {/* Media */}
         {post.imageUrl && !post.videoUrl && (
-          <div className="rounded-lg overflow-hidden cursor-pointer" onClick={() => setLightboxOpen(true)}>
-            <img src={post.imageUrl} alt="Post content" className="w-full max-h-80 object-cover hover:opacity-90 transition-opacity" />
+          <div className="rounded-lg overflow-hidden cursor-pointer bg-muted/20" onClick={() => setLightboxOpen(true)}>
+            <img
+              src={post.imageUrl}
+              alt="Post content"
+              loading="lazy"
+              className="w-full h-auto object-contain hover:opacity-90 transition-opacity"
+            />
           </div>
         )}
         {post.videoUrl && (

@@ -6,6 +6,8 @@ import { formatDistanceToNow } from "date-fns";
 import UserAvatar from "@/components/UserAvatar";
 import MarkdownContent from "@/components/MarkdownContent";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+import { checkProfanity } from "@/lib/profanity";
 
 export interface Comment {
   id: string;
@@ -36,9 +38,19 @@ const CommentNode = ({ comment, postId, depth = 0, onLike, onReply, canInteract 
   const [text, setText] = useState("");
   const [posting, setPosting] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const { toast } = useToast();
 
   const submit = async () => {
     if (!text.trim()) return;
+    const profanityCheck = checkProfanity(text);
+    if (!profanityCheck.ok) {
+      toast({
+        title: "Inappropriate language",
+        description: `Please remove profane or adult content (matched: "${profanityCheck.match}").`,
+        variant: "destructive",
+      });
+      return;
+    }
     setPosting(true);
     try {
       await onReply(postId, text.trim(), comment.id);

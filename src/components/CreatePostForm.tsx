@@ -9,6 +9,7 @@ import { PlusCircle, Upload, X, Loader2, Video, ShieldAlert, BarChart3, Plus, Tr
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { checkLinkSafety, labelFor } from "@/lib/linkSafety";
+import { checkProfanity } from "@/lib/profanity";
 import RichTextEditor from "@/components/RichTextEditor";
 
 export interface CreatePostPayload {
@@ -126,6 +127,17 @@ const CreatePostForm = ({ onCreatePost }: CreatePostFormProps) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!draft.title.trim() || !draft.description.trim()) { toast({ title: "Missing information", variant: "destructive" }); return; }
+
+    // Profanity / adult-content filter
+    const profanityCheck = checkProfanity(`${draft.title}\n${draft.description}\n${draft.pollQuestion}\n${draft.pollOptions.join("\n")}`);
+    if (!profanityCheck.ok) {
+      toast({
+        title: "Inappropriate language detected",
+        description: `Please remove profane or adult content (matched: "${profanityCheck.match}").`,
+        variant: "destructive",
+      });
+      return;
+    }
 
     // Validate poll if enabled
     let pollPayload: { question: string; options: string[] } | undefined;

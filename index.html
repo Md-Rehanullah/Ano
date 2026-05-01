@@ -36,7 +36,18 @@
       #splash-video {
         width: 100%;
         height: 100%;
+        /* Mobile portrait: fill the whole screen */
         object-fit: cover;
+      }
+      /* Tablet / laptop / desktop: show centered, no stretching */
+      @media (min-aspect-ratio: 4/5) and (min-width: 768px) {
+        #splash-video {
+          width: auto;
+          height: auto;
+          max-width: 90vw;
+          max-height: 90vh;
+          object-fit: contain;
+        }
       }
     </style>
   </head>
@@ -62,6 +73,17 @@
           splash.classList.add('fade-out');
           setTimeout(function() { splash.remove(); }, 500);
         }
+        // Show splash only on first launch of this session.
+        // When the user minimizes and reopens the app, sessionStorage persists,
+        // so the splash is skipped and they land back where they were.
+        try {
+          if (sessionStorage.getItem('bridge:splash-shown') === '1') {
+            hide();
+            return;
+          }
+          sessionStorage.setItem('bridge:splash-shown', '1');
+        } catch (e) { /* ignore */ }
+
         if (video) {
           video.addEventListener('ended', hide);
           video.addEventListener('error', hide);
