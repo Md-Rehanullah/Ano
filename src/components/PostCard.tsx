@@ -13,6 +13,7 @@ import VideoPlayer from "@/components/VideoPlayer";
 import CommentThread, { buildCommentTree, Comment } from "@/components/CommentThread";
 import MarkdownContent from "@/components/MarkdownContent";
 import PollBlock from "@/components/PollBlock";
+import { checkProfanity } from "@/lib/profanity";
 
 interface Answer {
   id: string;
@@ -117,6 +118,15 @@ const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmar
 
   const handleAddAnswer = () => {
     if (newAnswer.trim()) {
+      const check = checkProfanity(newAnswer);
+      if (!check.ok) {
+        toast({
+          title: "Inappropriate language",
+          description: `Please remove profane or adult content (matched: "${check.match}").`,
+          variant: "destructive",
+        });
+        return;
+      }
       onAddAnswer(post.id, newAnswer);
       setNewAnswer("");
       setShowAnswerForm(false);
