@@ -184,8 +184,13 @@ const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmar
 
         {/* Media */}
         {post.imageUrl && !post.videoUrl && (
-          <div className="rounded-lg overflow-hidden cursor-pointer" onClick={() => setLightboxOpen(true)}>
-            <img src={post.imageUrl} alt="Post content" className="w-full max-h-80 object-cover hover:opacity-90 transition-opacity" />
+          <div className="rounded-lg overflow-hidden cursor-pointer bg-muted/20" onClick={() => setLightboxOpen(true)}>
+            <img
+              src={post.imageUrl}
+              alt="Post content"
+              loading="lazy"
+              className="w-full h-auto object-contain hover:opacity-90 transition-opacity"
+            />
           </div>
         )}
         {post.videoUrl && (
