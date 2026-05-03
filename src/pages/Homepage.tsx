@@ -119,7 +119,7 @@ const Homepage = () => {
         answers: post.answers.map((a: any) => ({
           id: a.id, content: a.content, likes: a.likes, dislikes: a.dislikes, replies: [],
           created_at: a.created_at, parent_id: a.parent_id ?? null,
-          authorName: profilesMap[a.user_id]?.display_name || null,
+          authorName: profilesMap[a.user_id]?.display_name || a.seed_author_name || null,
           authorAvatar: profilesMap[a.user_id]?.avatar_url || null,
         }))
       }));

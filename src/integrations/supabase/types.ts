@@ -55,9 +55,11 @@ export type Database = {
           created_at: string
           dislikes: number
           id: string
+          is_seed: boolean
           likes: number
           parent_id: string | null
           post_id: string
+          seed_author_name: string | null
           updated_at: string
           user_id: string | null
         }
@@ -66,9 +68,11 @@ export type Database = {
           created_at?: string
           dislikes?: number
           id?: string
+          is_seed?: boolean
           likes?: number
           parent_id?: string | null
           post_id: string
+          seed_author_name?: string | null
           updated_at?: string
           user_id?: string | null
         }
@@ -77,9 +81,11 @@ export type Database = {
           created_at?: string
           dislikes?: number
           id?: string
+          is_seed?: boolean
           likes?: number
           parent_id?: string | null
           post_id?: string
+          seed_author_name?: string | null
           updated_at?: string
           user_id?: string | null
         }
