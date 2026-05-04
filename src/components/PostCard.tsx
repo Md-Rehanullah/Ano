@@ -299,6 +299,13 @@ const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmar
                   onReply={(pid, content, parentId) => onAddAnswer(pid, content, parentId)}
                   canInteract={canInteract}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowComments(false)}
+                  className="text-xs sm:text-sm font-medium text-primary hover:underline"
+                >
+                  Hide {post.answers.length === 1 ? 'comment' : 'comments'}
+                </button>
               </div>
             )}
           </div>
