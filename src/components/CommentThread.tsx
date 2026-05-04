@@ -143,7 +143,7 @@ const CommentNode = ({ comment, postId, depth = 0, onLike, onReply, canInteract 
         )}
       </div>
 
-      {!collapsed && replies.length > 0 && (
+      {showReplies && replies.length > 0 && (
         <div className="mt-2 space-y-2">
           {replies.map((child) => (
             <CommentNode
