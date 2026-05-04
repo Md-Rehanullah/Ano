@@ -66,6 +66,7 @@ const READ_MORE_THRESHOLD = 2300;
 const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmark, userInteraction, isBookmarked, canInteract = true }: PostCardProps) => {
   const [newAnswer, setNewAnswer] = useState("");
   const [showAnswerForm, setShowAnswerForm] = useState(false);
+  const [showComments, setShowComments] = useState(false);
   const [reportReason, setReportReason] = useState("");
   const [showReportForm, setShowReportForm] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
