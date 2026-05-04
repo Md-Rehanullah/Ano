@@ -37,7 +37,7 @@ const CommentNode = ({ comment, postId, depth = 0, onLike, onReply, canInteract 
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
   const [posting, setPosting] = useState(false);
-  const [collapsed, setCollapsed] = useState(false);
+  const [showReplies, setShowReplies] = useState(false);
   const { toast } = useToast();
 
   const submit = async () => {
