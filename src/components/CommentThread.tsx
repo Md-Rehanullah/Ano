@@ -156,6 +156,14 @@ const CommentNode = ({ comment, postId, depth = 0, onLike, onReply, canInteract 
               canInteract={canInteract}
             />
           ))}
+          <button
+            type="button"
+            onClick={() => setShowReplies(false)}
+            className="text-[11px] text-muted-foreground hover:text-foreground flex items-center gap-0.5 ml-1"
+          >
+            <ChevronUp className="h-3 w-3" />
+            Hide {replies.length} {replies.length === 1 ? 'reply' : 'replies'}
+          </button>
         </div>
       )}
     </div>
