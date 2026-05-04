@@ -37,7 +37,7 @@ const CommentNode = ({ comment, postId, depth = 0, onLike, onReply, canInteract 
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
   const [posting, setPosting] = useState(false);
-  const [collapsed, setCollapsed] = useState(false);
+  const [showReplies, setShowReplies] = useState(false);
   const { toast } = useToast();
 
   const submit = async () => {
@@ -90,12 +90,12 @@ const CommentNode = ({ comment, postId, depth = 0, onLike, onReply, canInteract 
           {replies.length > 0 && (
             <button
               type="button"
-              onClick={() => setCollapsed(c => !c)}
+              onClick={() => setShowReplies(s => !s)}
               className="text-[11px] text-muted-foreground hover:text-foreground flex items-center gap-0.5"
-              aria-label={collapsed ? "Expand replies" : "Collapse replies"}
+              aria-label={showReplies ? "Hide replies" : "Show replies"}
             >
-              {collapsed ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />}
-              {replies.length}
+              {showReplies ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+              {showReplies ? `Hide ${replies.length}` : `Show ${replies.length} ${replies.length === 1 ? 'reply' : 'replies'}`}
             </button>
           )}
         </div>
@@ -143,7 +143,7 @@ const CommentNode = ({ comment, postId, depth = 0, onLike, onReply, canInteract 
         )}
       </div>
 
-      {!collapsed && replies.length > 0 && (
+      {showReplies && replies.length > 0 && (
         <div className="mt-2 space-y-2">
           {replies.map((child) => (
             <CommentNode

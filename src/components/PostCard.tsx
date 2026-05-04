@@ -66,6 +66,7 @@ const READ_MORE_THRESHOLD = 2300;
 const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmark, userInteraction, isBookmarked, canInteract = true }: PostCardProps) => {
   const [newAnswer, setNewAnswer] = useState("");
   const [showAnswerForm, setShowAnswerForm] = useState(false);
+  const [showComments, setShowComments] = useState(false);
   const [reportReason, setReportReason] = useState("");
   const [showReportForm, setShowReportForm] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -277,19 +278,29 @@ const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmar
           </div>
         )}
 
-        {/* Nested comments */}
+        {/* Nested comments — toggled */}
         {post.answers.length > 0 && (
-          <div className="space-y-3 border-t pt-3">
-            <h4 className="font-medium text-sm">
-              {post.answers.length} {post.answers.length === 1 ? 'Comment' : 'Comments'}
-            </h4>
-            <CommentThread
-              comments={commentTree}
-              postId={post.id}
-              onLike={onAnswerLike}
-              onReply={(pid, content, parentId) => onAddAnswer(pid, content, parentId)}
-              canInteract={canInteract}
-            />
+          <div className="border-t pt-3">
+            <button
+              type="button"
+              onClick={() => setShowComments(s => !s)}
+              className="text-xs sm:text-sm font-medium text-primary hover:underline"
+            >
+              {showComments
+                ? `Hide ${post.answers.length === 1 ? 'comment' : 'comments'}`
+                : `Show ${post.answers.length} ${post.answers.length === 1 ? 'comment' : 'comments'}`}
+            </button>
+            {showComments && (
+              <div className="space-y-3 mt-3">
+                <CommentThread
+                  comments={commentTree}
+                  postId={post.id}
+                  onLike={onAnswerLike}
+                  onReply={(pid, content, parentId) => onAddAnswer(pid, content, parentId)}
+                  canInteract={canInteract}
+                />
+              </div>
+            )}
           </div>
         )}
       </div>
