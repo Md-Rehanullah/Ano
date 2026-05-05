@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Camera, User, Loader2, Mail, Trash2, AlertTriangle } from "lucide-react";
+import { Camera, User, Loader2, Mail, Trash2, AlertTriangle, MapPin, Twitter, Instagram, Facebook } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -20,14 +20,23 @@ interface ProfileSettingsProps {
   displayName: string | null;
   avatarUrl: string | null;
   bio: string | null;
+  location?: string | null;
+  xUrl?: string | null;
+  instagramUrl?: string | null;
+  facebookUrl?: string | null;
   onUpdate: () => void;
 }
 
 const BIO_MAX = 300;
 
-const ProfileSettings = ({ userId, email, displayName, avatarUrl, bio, onUpdate }: ProfileSettingsProps) => {
+const ProfileSettings = ({ userId, email, displayName, avatarUrl, bio, location, xUrl, instagramUrl, facebookUrl, onUpdate }: ProfileSettingsProps) => {
   const [name, setName] = useState(displayName || "");
   const [bioText, setBioText] = useState(bio || "");
+  const [city, setCity] = useState(location || "");
+  const [x, setX] = useState(xUrl || "");
+  const [ig, setIg] = useState(instagramUrl || "");
+  const [fb, setFb] = useState(facebookUrl || "");
+  const [isSavingExtras, setIsSavingExtras] = useState(false);
   const [isSavingName, setIsSavingName] = useState(false);
   const [isSavingBio, setIsSavingBio] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -155,6 +164,34 @@ const ProfileSettings = ({ userId, email, displayName, avatarUrl, bio, onUpdate 
     }
   };
 
+  const handleSaveExtras = async () => {
+    setIsSavingExtras(true);
+    try {
+      const sanitize = (v: string) => {
+        const t = v.trim();
+        return t.length ? t.slice(0, 200) : null;
+      };
+      const payload = {
+        user_id: userId,
+        location: sanitize(city),
+        x_url: sanitize(x),
+        instagram_url: sanitize(ig),
+        facebook_url: sanitize(fb),
+      };
+      const { error } = await supabase
+        .from("profiles")
+        .upsert(payload, { onConflict: "user_id" });
+      if (error) throw error;
+      onUpdate();
+      toast({ title: "Profile details saved" });
+    } catch (e) {
+      console.error("Extras save error", e);
+      toast({ title: "Error", description: "Failed to save details.", variant: "destructive" });
+    } finally {
+      setIsSavingExtras(false);
+    }
+  };
+
   return (
     <Card className="p-6 shadow-card">
       <h2 className="text-lg font-semibold mb-6">Profile Settings</h2>
@@ -217,6 +254,43 @@ const ProfileSettings = ({ userId, email, displayName, avatarUrl, bio, onUpdate 
             <p className="text-xs text-muted-foreground">{bioText.length}/{BIO_MAX}</p>
             <Button size="sm" onClick={handleSaveBio} disabled={isSavingBio || (bioText.trim() === (bio || "").trim())}>
               {isSavingBio ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving...</> : "Save Bio"}
+            </Button>
+          </div>
+        </div>
+
+        {/* Location */}
+        <div className="space-y-2">
+          <Label htmlFor="location" className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5" /> Location <span className="text-xs text-muted-foreground font-normal">(optional)</span></Label>
+          <Input
+            id="location"
+            value={city}
+            onChange={(e) => setCity(e.target.value)}
+            placeholder="e.g. Mumbai, India"
+            maxLength={120}
+          />
+          <p className="text-xs text-muted-foreground">Shown publicly on your profile. Leave empty to hide.</p>
+        </div>
+
+        {/* Social Links */}
+        <div className="space-y-3">
+          <Label>Social Links <span className="text-xs text-muted-foreground font-normal">(public, optional)</span></Label>
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Twitter className="h-4 w-4 text-muted-foreground shrink-0" />
+              <Input value={x} onChange={(e) => setX(e.target.value)} placeholder="https://x.com/yourhandle" />
+            </div>
+            <div className="flex items-center gap-2">
+              <Instagram className="h-4 w-4 text-muted-foreground shrink-0" />
+              <Input value={ig} onChange={(e) => setIg(e.target.value)} placeholder="https://instagram.com/yourhandle" />
+            </div>
+            <div className="flex items-center gap-2">
+              <Facebook className="h-4 w-4 text-muted-foreground shrink-0" />
+              <Input value={fb} onChange={(e) => setFb(e.target.value)} placeholder="https://facebook.com/yourhandle" />
+            </div>
+          </div>
+          <div className="flex justify-end">
+            <Button size="sm" onClick={handleSaveExtras} disabled={isSavingExtras}>
+              {isSavingExtras ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving...</> : "Save details"}
             </Button>
           </div>
         </div>

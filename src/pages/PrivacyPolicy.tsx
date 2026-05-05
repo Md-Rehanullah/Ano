@@ -9,7 +9,7 @@ const PrivacyPolicy = () => {
         <div className="text-center mb-10">
           <Shield className="h-12 w-12 mx-auto mb-4 text-primary" />
           <h1 className="text-3xl font-bold mb-2">Privacy Policy</h1>
-          <p className="text-sm text-muted-foreground">Last updated: April 18, 2026</p>
+          <p className="text-sm text-muted-foreground">Last updated: May 5, 2026</p>
         </div>
 
         <Card className="p-8 shadow-card space-y-6 text-sm leading-relaxed text-muted-foreground">
@@ -28,10 +28,31 @@ const PrivacyPolicy = () => {
             <ul className="list-disc pl-5 space-y-1">
               <li><strong>Account information:</strong> email address, display name, and avatar (when you sign in with email or GitHub).</li>
               <li><strong>User-generated content:</strong> posts, comments, bookmarks, reports, and uploaded images or videos.</li>
+              <li><strong>Optional profile details:</strong> a city/region you choose to enter, and public social media links (X, Instagram, Facebook).</li>
               <li><strong>Usage data:</strong> post views, likes, and basic interaction history needed to power the app.</li>
               <li><strong>Device data:</strong> general device type and app version, used for diagnostics.</li>
             </ul>
             <p className="mt-2">We do <strong>not</strong> collect precise location, contacts, SMS, call logs, or microphone data.</p>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-semibold text-foreground mb-2">2a. Location Data</h2>
+            <p>
+              The "Location" field on your profile is <strong>entirely optional and user-provided</strong>.
+              The app does <strong>not</strong> request, access, or track GPS or background location of any kind.
+              We only display the city or region you choose to type in, and only if you fill in that field.
+              You can clear it at any time from <em>Profile → Settings → Location</em>.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-semibold text-foreground mb-2">2b. Social Media Links</h2>
+            <p>
+              You may optionally add public links to your X, Instagram, and Facebook profiles. These are shown
+              publicly on your profile so other users can find you. The app <strong>does not log in to those
+              services on your behalf, does not store any external login credentials, and does not access any
+              data from those platforms</strong>. You can remove the links at any time.
+            </p>
           </section>
 
           <section>

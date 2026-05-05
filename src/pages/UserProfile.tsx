@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Lock, FileText, MessageCircle, ThumbsUp, ArrowLeft } from "lucide-react";
+import { Lock, FileText, MessageCircle, ThumbsUp, ArrowLeft, MapPin, Twitter, Instagram, Facebook } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
 import KarmaBadges from "@/components/KarmaBadges";
@@ -16,6 +16,10 @@ interface ProfileData {
   display_name: string | null;
   avatar_url: string | null;
   bio: string | null;
+  location: string | null;
+  x_url: string | null;
+  instagram_url: string | null;
+  facebook_url: string | null;
 }
 interface PostItem { id: string; title: string; description: string; category: string; likes: number; created_at: string; }
 interface AnswerItem { id: string; content: string; created_at: string; post: { id: string; title: string } | null; }
@@ -35,10 +39,10 @@ const UserProfile = () => {
       setLoading(true);
       const { data: prof } = await supabase
         .from("profiles")
-        .select("display_name, avatar_url, bio")
+        .select("display_name, avatar_url, bio, location, x_url, instagram_url, facebook_url")
         .eq("user_id", userId)
         .maybeSingle();
-      setProfile(prof);
+      setProfile(prof as any);
 
       const { data: postsData } = await supabase
         .from("posts")
@@ -87,25 +91,52 @@ const UserProfile = () => {
           <ArrowLeft className="h-4 w-4 mr-1" /> Back
         </Button>
 
-        <Card className="p-6 mb-6 shadow-card">
-          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
-            <UserAvatar src={profile?.avatar_url} name={profile?.display_name} className="h-20 w-20" fallbackClassName="text-2xl" />
-            <div className="flex-1 text-center sm:text-left">
-              <h1 className="text-2xl font-bold mb-1">{profile?.display_name || "User"}</h1>
-              {profile?.bio ? (
-                <p className="text-sm text-muted-foreground mb-3 whitespace-pre-wrap">{profile.bio}</p>
-              ) : (
-                <p className="text-sm text-muted-foreground italic mb-3">No bio yet.</p>
-              )}
-              <div className="flex flex-wrap justify-center sm:justify-start gap-2">
-                <Badge variant="secondary" className="gap-1"><FileText className="h-3 w-3" />{posts.length} Posts</Badge>
-                <Badge variant="secondary" className="gap-1"><MessageCircle className="h-3 w-3" />{answers.length} Comments</Badge>
-                <Badge variant="secondary" className="gap-1"><ThumbsUp className="h-3 w-3" />{totalLikes} Likes</Badge>
-              </div>
+        <Card className="overflow-hidden mb-6 shadow-card">
+          <div className="h-28 sm:h-36 bg-gradient-to-br from-primary/80 via-primary to-primary/60" />
+          <div className="px-6 pb-6 -mt-12 sm:-mt-14 flex flex-col items-center text-center">
+            <div className="rounded-full ring-4 ring-background">
+              <UserAvatar src={profile?.avatar_url} name={profile?.display_name} className="h-24 w-24" fallbackClassName="text-2xl" />
             </div>
-          </div>
-          <div className="mt-5 pt-4 border-t">
-            <KarmaBadges stats={karma} />
+            <h1 className="text-2xl font-bold mt-3">{profile?.display_name || "User"}</h1>
+            {profile?.location && (
+              <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1">
+                <MapPin className="h-3.5 w-3.5" /> {profile.location}
+              </p>
+            )}
+            {profile?.bio ? (
+              <p className="text-sm text-muted-foreground max-w-xl mt-3 whitespace-pre-wrap">{profile.bio}</p>
+            ) : (
+              <p className="text-sm text-muted-foreground italic mt-3">No bio yet.</p>
+            )}
+
+            {(() => {
+              const norm = (u?: string | null) => {
+                if (!u) return null;
+                const t = u.trim();
+                if (!t) return null;
+                return /^https?:\/\//i.test(t) ? t : `https://${t}`;
+              };
+              const xL = norm(profile?.x_url);
+              const igL = norm(profile?.instagram_url);
+              const fbL = norm(profile?.facebook_url);
+              if (!xL && !igL && !fbL) return null;
+              return (
+                <div className="flex items-center gap-2 mt-4">
+                  {xL && <a href={xL} target="_blank" rel="noopener noreferrer" aria-label="X" className="h-9 w-9 flex items-center justify-center rounded-full bg-muted hover:bg-primary hover:text-primary-foreground transition-colors"><Twitter className="h-4 w-4" /></a>}
+                  {igL && <a href={igL} target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="h-9 w-9 flex items-center justify-center rounded-full bg-muted hover:bg-primary hover:text-primary-foreground transition-colors"><Instagram className="h-4 w-4" /></a>}
+                  {fbL && <a href={fbL} target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="h-9 w-9 flex items-center justify-center rounded-full bg-muted hover:bg-primary hover:text-primary-foreground transition-colors"><Facebook className="h-4 w-4" /></a>}
+                </div>
+              );
+            })()}
+
+            <div className="flex flex-wrap justify-center gap-2 mt-5">
+              <Badge variant="secondary" className="gap-1"><FileText className="h-3 w-3" />{posts.length} Posts</Badge>
+              <Badge variant="secondary" className="gap-1"><MessageCircle className="h-3 w-3" />{answers.length} Comments</Badge>
+              <Badge variant="secondary" className="gap-1"><ThumbsUp className="h-3 w-3" />{totalLikes} Likes</Badge>
+            </div>
+            <div className="mt-5 pt-4 border-t w-full">
+              <KarmaBadges stats={karma} />
+            </div>
           </div>
         </Card>
 

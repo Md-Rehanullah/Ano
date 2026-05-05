@@ -18,7 +18,7 @@ import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Loader2, Shield, Trash2, FileText, Mail, Users, BarChart3, Eye, EyeOff,
-  Pin, PinOff, Ban, AlertTriangle, History, UserX,
+  Pin, PinOff, Ban, AlertTriangle, History, UserX, UserSearch, ThumbsUp, MessageCircle,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
@@ -29,6 +29,12 @@ interface ModPost { id: string; title: string; user_id: string | null; category:
 interface BanRow { id: string; user_id: string; reason: string; banned_until: string | null; created_at: string; display_name?: string | null; }
 interface WarnRow { id: string; user_id: string; message: string; acknowledged: boolean; created_at: string; display_name?: string | null; }
 interface LogRow { id: string; actor_id: string; action: string; target_type: string | null; target_id: string | null; details: any; created_at: string; actor_name?: string | null; }
+interface UserRow { user_id: string; display_name: string | null; email: string | null; created_at: string; post_count: number; comment_count: number; like_count: number; banned: boolean; }
+interface UserDetail {
+  posts: { id: string; title: string; category: string; created_at: string; is_hidden: boolean }[];
+  comments: { id: string; content: string; post_id: string; post_title: string | null; created_at: string }[];
+  likes: { post_id: string; post_title: string | null; created_at: string }[];
+}
 
 const AdminDashboard = () => {
   const { user, loading: authLoading } = useAuth();
@@ -45,6 +51,14 @@ const AdminDashboard = () => {
   const [stats, setStats] = useState({ totalPosts: 0, totalUsers: 0, totalComments: 0, totalReports: 0, totalMessages: 0 });
   const [chartData, setChartData] = useState<{ category: string; count: number }[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Users hub
+  const [users, setUsers] = useState<UserRow[]>([]);
+  const [usersLoaded, setUsersLoaded] = useState(false);
+  const [userSearch, setUserSearch] = useState("");
+  const [selectedUser, setSelectedUser] = useState<UserRow | null>(null);
+  const [userDetail, setUserDetail] = useState<UserDetail | null>(null);
+  const [loadingDetail, setLoadingDetail] = useState(false);
 
   // Ban / Warn dialog state
   const [banUserId, setBanUserId] = useState("");
@@ -241,6 +255,88 @@ const AdminDashboard = () => {
     loadAll();
   };
 
+  const loadUsers = async () => {
+    try {
+      const { data: sess } = await supabase.auth.getSession();
+      const token = sess.session?.access_token;
+      if (!token) throw new Error("Not signed in");
+      const { data, error } = await supabase.functions.invoke("admin-list-users", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      setUsers(((data as any)?.users || []) as UserRow[]);
+      setUsersLoaded(true);
+    } catch (e: any) {
+      toast({ title: "Failed to load users", description: e.message, variant: "destructive" });
+    }
+  };
+
+  const openUser = async (u: UserRow) => {
+    setSelectedUser(u);
+    setUserDetail(null);
+    setLoadingDetail(true);
+    try {
+      const [{ data: posts }, { data: comments }, { data: likes }] = await Promise.all([
+        supabase.from("posts").select("id, title, category, created_at, is_hidden").eq("user_id", u.user_id).order("created_at", { ascending: false }).limit(200),
+        supabase.from("answers").select("id, content, post_id, created_at").eq("user_id", u.user_id).order("created_at", { ascending: false }).limit(200),
+        supabase.from("liked_posts" as any).select("post_id, created_at").eq("user_id", u.user_id).order("created_at", { ascending: false }).limit(200),
+      ]);
+      const postIds = [...new Set([
+        ...((comments || []).map((c: any) => c.post_id)),
+        ...((likes as any[] || []).map((l: any) => l.post_id)),
+      ])];
+      let titleMap: Record<string, string> = {};
+      if (postIds.length) {
+        const { data: tps } = await supabase.from("posts").select("id, title").in("id", postIds);
+        titleMap = Object.fromEntries((tps || []).map((p: any) => [p.id, p.title]));
+      }
+      setUserDetail({
+        posts: (posts || []) as any,
+        comments: (comments || []).map((c: any) => ({ ...c, post_title: titleMap[c.post_id] || null })),
+        likes: ((likes as any[]) || []).map((l: any) => ({ ...l, post_title: titleMap[l.post_id] || null })),
+      });
+    } catch (e: any) {
+      toast({ title: "Failed to load activity", description: e.message, variant: "destructive" });
+    } finally {
+      setLoadingDetail(false);
+    }
+  };
+
+  const quickBan = async (u: UserRow) => {
+    if (!user) return;
+    if (!confirm(`Ban ${u.display_name || u.email || u.user_id} permanently?`)) return;
+    const { error } = await supabase.from("user_bans").upsert({
+      user_id: u.user_id, banned_by: user.id, reason: "Admin action", banned_until: null,
+    }, { onConflict: "user_id" });
+    if (error) { toast({ title: "Ban failed", description: error.message, variant: "destructive" }); return; }
+    await writeLog("ban_user", "user", u.user_id, { reason: "Admin action" });
+    toast({ title: "User banned" });
+    setUsers(prev => prev.map(x => x.user_id === u.user_id ? { ...x, banned: true } : x));
+  };
+
+  const quickUnban = async (u: UserRow) => {
+    const { error } = await supabase.from("user_bans").delete().eq("user_id", u.user_id);
+    if (error) { toast({ title: "Failed", variant: "destructive" }); return; }
+    await writeLog("unban_user", "user", u.user_id);
+    toast({ title: "Ban lifted" });
+    setUsers(prev => prev.map(x => x.user_id === u.user_id ? { ...x, banned: false } : x));
+  };
+
+  const adminDeletePostInline = async (postId: string) => {
+    if (!confirm("Delete this post permanently?")) return;
+    const { error } = await supabase.from("posts").delete().eq("id", postId);
+    if (error) { toast({ title: "Failed", variant: "destructive" }); return; }
+    await writeLog("delete_post", "post", postId);
+    setUserDetail(d => d ? { ...d, posts: d.posts.filter(p => p.id !== postId) } : d);
+    toast({ title: "Post deleted" });
+  };
+
+  useEffect(() => {
+    if (isAdmin && !usersLoaded) loadUsers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAdmin]);
+
   if (authLoading || roleLoading || loading) {
     return <Layout><div className="container py-12 flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div></Layout>;
   }
@@ -288,6 +384,7 @@ const AdminDashboard = () => {
 
         <Tabs defaultValue="reports">
           <TabsList className="flex flex-wrap max-w-full mb-6 h-auto">
+            <TabsTrigger value="users"><Users className="h-3.5 w-3.5 mr-1" />Users</TabsTrigger>
             <TabsTrigger value="reports">Reports</TabsTrigger>
             <TabsTrigger value="moderation">Moderation</TabsTrigger>
             <TabsTrigger value="bans"><Ban className="h-3.5 w-3.5 mr-1" />Bans</TabsTrigger>
@@ -296,6 +393,133 @@ const AdminDashboard = () => {
             <TabsTrigger value="messages">Messages</TabsTrigger>
             <TabsTrigger value="analytics"><BarChart3 className="h-3.5 w-3.5 mr-1" />Analytics</TabsTrigger>
           </TabsList>
+
+          {/* Users hub */}
+          <TabsContent value="users">
+            <Card className="p-4 shadow-card space-y-3">
+              <div className="flex items-center gap-2">
+                <UserSearch className="h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by name or email…"
+                  value={userSearch}
+                  onChange={(e) => setUserSearch(e.target.value)}
+                  className="max-w-sm"
+                />
+                <Button size="sm" variant="outline" onClick={loadUsers}>Refresh</Button>
+              </div>
+              {!usersLoaded ? (
+                <div className="py-10 flex justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>User</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead className="text-right">Posts</TableHead>
+                        <TableHead className="text-right">Comments</TableHead>
+                        <TableHead className="text-right">Likes</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {users
+                        .filter(u => {
+                          const q = userSearch.trim().toLowerCase();
+                          if (!q) return true;
+                          return (u.display_name || "").toLowerCase().includes(q) || (u.email || "").toLowerCase().includes(q);
+                        })
+                        .map(u => (
+                          <TableRow key={u.user_id}>
+                            <TableCell>
+                              <button className="text-sm font-medium hover:text-primary text-left" onClick={() => openUser(u)}>
+                                {u.display_name || "(no name)"}
+                              </button>
+                              <div className="text-[10px] text-muted-foreground font-mono">{u.user_id.slice(0, 8)}…</div>
+                            </TableCell>
+                            <TableCell className="text-sm">{u.email || "—"}</TableCell>
+                            <TableCell className="text-right text-sm">{u.post_count}</TableCell>
+                            <TableCell className="text-right text-sm">{u.comment_count}</TableCell>
+                            <TableCell className="text-right text-sm">{u.like_count}</TableCell>
+                            <TableCell>
+                              {u.banned
+                                ? <Badge variant="destructive" className="text-[10px]">Banned</Badge>
+                                : <Badge variant="secondary" className="text-[10px]">Active</Badge>}
+                            </TableCell>
+                            <TableCell className="text-right space-x-1">
+                              <Button size="sm" variant="outline" onClick={() => openUser(u)}>View</Button>
+                              {u.banned
+                                ? <Button size="sm" variant="outline" onClick={() => quickUnban(u)}>Unban</Button>
+                                : <Button size="sm" variant="destructive" onClick={() => quickBan(u)}><Ban className="h-3 w-3" /></Button>}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </Card>
+
+            <Dialog open={!!selectedUser} onOpenChange={(o) => { if (!o) { setSelectedUser(null); setUserDetail(null); } }}>
+              <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>{selectedUser?.display_name || "User"}</DialogTitle>
+                  <DialogDescription>
+                    {selectedUser?.email} · <span className="font-mono text-[10px]">{selectedUser?.user_id}</span>
+                  </DialogDescription>
+                </DialogHeader>
+                {loadingDetail || !userDetail ? (
+                  <div className="py-10 flex justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+                ) : (
+                  <Tabs defaultValue="posts">
+                    <TabsList className="grid grid-cols-3 w-full">
+                      <TabsTrigger value="posts"><FileText className="h-3.5 w-3.5 mr-1" />Posts ({userDetail.posts.length})</TabsTrigger>
+                      <TabsTrigger value="comments"><MessageCircle className="h-3.5 w-3.5 mr-1" />Comments ({userDetail.comments.length})</TabsTrigger>
+                      <TabsTrigger value="likes"><ThumbsUp className="h-3.5 w-3.5 mr-1" />Likes ({userDetail.likes.length})</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="posts" className="space-y-2 mt-3">
+                      {userDetail.posts.length === 0 ? <p className="text-sm text-muted-foreground text-center py-6">No posts.</p> :
+                        userDetail.posts.map(p => (
+                          <div key={p.id} className="flex items-center justify-between gap-2 border rounded-md p-2 text-sm">
+                            <div className="min-w-0">
+                              <p className="font-medium truncate">{p.title}</p>
+                              <p className="text-[10px] text-muted-foreground">{p.category} · {formatDistanceToNow(new Date(p.created_at), { addSuffix: true })}{p.is_hidden && " · hidden"}</p>
+                            </div>
+                            <Button size="sm" variant="destructive" onClick={() => adminDeletePostInline(p.id)}><Trash2 className="h-3 w-3" /></Button>
+                          </div>
+                        ))}
+                    </TabsContent>
+                    <TabsContent value="comments" className="space-y-2 mt-3">
+                      {userDetail.comments.length === 0 ? <p className="text-sm text-muted-foreground text-center py-6">No comments.</p> :
+                        userDetail.comments.map(c => (
+                          <div key={c.id} className="border rounded-md p-2 text-sm">
+                            <p className="text-[10px] text-muted-foreground mb-1">on <span className="text-foreground font-medium">{c.post_title || "(deleted)"}</span> · {formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}</p>
+                            <p className="whitespace-pre-wrap">{c.content}</p>
+                          </div>
+                        ))}
+                    </TabsContent>
+                    <TabsContent value="likes" className="space-y-2 mt-3">
+                      {userDetail.likes.length === 0 ? <p className="text-sm text-muted-foreground text-center py-6">No likes.</p> :
+                        userDetail.likes.map(l => (
+                          <div key={l.post_id} className="border rounded-md p-2 text-sm flex items-center justify-between gap-2">
+                            <span className="truncate">{l.post_title || "(deleted)"}</span>
+                            <span className="text-[10px] text-muted-foreground shrink-0">{formatDistanceToNow(new Date(l.created_at), { addSuffix: true })}</span>
+                          </div>
+                        ))}
+                    </TabsContent>
+                  </Tabs>
+                )}
+                <DialogFooter>
+                  {selectedUser && (
+                    selectedUser.banned
+                      ? <Button variant="outline" onClick={() => quickUnban(selectedUser)}>Lift ban</Button>
+                      : <Button variant="destructive" onClick={() => quickBan(selectedUser)}><Ban className="h-4 w-4 mr-1" />Ban user</Button>
+                  )}
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </TabsContent>
 
           {/* Reports */}
           <TabsContent value="reports">
