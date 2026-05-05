@@ -394,6 +394,133 @@ const AdminDashboard = () => {
             <TabsTrigger value="analytics"><BarChart3 className="h-3.5 w-3.5 mr-1" />Analytics</TabsTrigger>
           </TabsList>
 
+          {/* Users hub */}
+          <TabsContent value="users">
+            <Card className="p-4 shadow-card space-y-3">
+              <div className="flex items-center gap-2">
+                <UserSearch className="h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by name or email…"
+                  value={userSearch}
+                  onChange={(e) => setUserSearch(e.target.value)}
+                  className="max-w-sm"
+                />
+                <Button size="sm" variant="outline" onClick={loadUsers}>Refresh</Button>
+              </div>
+              {!usersLoaded ? (
+                <div className="py-10 flex justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>User</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead className="text-right">Posts</TableHead>
+                        <TableHead className="text-right">Comments</TableHead>
+                        <TableHead className="text-right">Likes</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {users
+                        .filter(u => {
+                          const q = userSearch.trim().toLowerCase();
+                          if (!q) return true;
+                          return (u.display_name || "").toLowerCase().includes(q) || (u.email || "").toLowerCase().includes(q);
+                        })
+                        .map(u => (
+                          <TableRow key={u.user_id}>
+                            <TableCell>
+                              <button className="text-sm font-medium hover:text-primary text-left" onClick={() => openUser(u)}>
+                                {u.display_name || "(no name)"}
+                              </button>
+                              <div className="text-[10px] text-muted-foreground font-mono">{u.user_id.slice(0, 8)}…</div>
+                            </TableCell>
+                            <TableCell className="text-sm">{u.email || "—"}</TableCell>
+                            <TableCell className="text-right text-sm">{u.post_count}</TableCell>
+                            <TableCell className="text-right text-sm">{u.comment_count}</TableCell>
+                            <TableCell className="text-right text-sm">{u.like_count}</TableCell>
+                            <TableCell>
+                              {u.banned
+                                ? <Badge variant="destructive" className="text-[10px]">Banned</Badge>
+                                : <Badge variant="secondary" className="text-[10px]">Active</Badge>}
+                            </TableCell>
+                            <TableCell className="text-right space-x-1">
+                              <Button size="sm" variant="outline" onClick={() => openUser(u)}>View</Button>
+                              {u.banned
+                                ? <Button size="sm" variant="outline" onClick={() => quickUnban(u)}>Unban</Button>
+                                : <Button size="sm" variant="destructive" onClick={() => quickBan(u)}><Ban className="h-3 w-3" /></Button>}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </Card>
+
+            <Dialog open={!!selectedUser} onOpenChange={(o) => { if (!o) { setSelectedUser(null); setUserDetail(null); } }}>
+              <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>{selectedUser?.display_name || "User"}</DialogTitle>
+                  <DialogDescription>
+                    {selectedUser?.email} · <span className="font-mono text-[10px]">{selectedUser?.user_id}</span>
+                  </DialogDescription>
+                </DialogHeader>
+                {loadingDetail || !userDetail ? (
+                  <div className="py-10 flex justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+                ) : (
+                  <Tabs defaultValue="posts">
+                    <TabsList className="grid grid-cols-3 w-full">
+                      <TabsTrigger value="posts"><FileText className="h-3.5 w-3.5 mr-1" />Posts ({userDetail.posts.length})</TabsTrigger>
+                      <TabsTrigger value="comments"><MessageCircle className="h-3.5 w-3.5 mr-1" />Comments ({userDetail.comments.length})</TabsTrigger>
+                      <TabsTrigger value="likes"><ThumbsUp className="h-3.5 w-3.5 mr-1" />Likes ({userDetail.likes.length})</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="posts" className="space-y-2 mt-3">
+                      {userDetail.posts.length === 0 ? <p className="text-sm text-muted-foreground text-center py-6">No posts.</p> :
+                        userDetail.posts.map(p => (
+                          <div key={p.id} className="flex items-center justify-between gap-2 border rounded-md p-2 text-sm">
+                            <div className="min-w-0">
+                              <p className="font-medium truncate">{p.title}</p>
+                              <p className="text-[10px] text-muted-foreground">{p.category} · {formatDistanceToNow(new Date(p.created_at), { addSuffix: true })}{p.is_hidden && " · hidden"}</p>
+                            </div>
+                            <Button size="sm" variant="destructive" onClick={() => adminDeletePostInline(p.id)}><Trash2 className="h-3 w-3" /></Button>
+                          </div>
+                        ))}
+                    </TabsContent>
+                    <TabsContent value="comments" className="space-y-2 mt-3">
+                      {userDetail.comments.length === 0 ? <p className="text-sm text-muted-foreground text-center py-6">No comments.</p> :
+                        userDetail.comments.map(c => (
+                          <div key={c.id} className="border rounded-md p-2 text-sm">
+                            <p className="text-[10px] text-muted-foreground mb-1">on <span className="text-foreground font-medium">{c.post_title || "(deleted)"}</span> · {formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}</p>
+                            <p className="whitespace-pre-wrap">{c.content}</p>
+                          </div>
+                        ))}
+                    </TabsContent>
+                    <TabsContent value="likes" className="space-y-2 mt-3">
+                      {userDetail.likes.length === 0 ? <p className="text-sm text-muted-foreground text-center py-6">No likes.</p> :
+                        userDetail.likes.map(l => (
+                          <div key={l.post_id} className="border rounded-md p-2 text-sm flex items-center justify-between gap-2">
+                            <span className="truncate">{l.post_title || "(deleted)"}</span>
+                            <span className="text-[10px] text-muted-foreground shrink-0">{formatDistanceToNow(new Date(l.created_at), { addSuffix: true })}</span>
+                          </div>
+                        ))}
+                    </TabsContent>
+                  </Tabs>
+                )}
+                <DialogFooter>
+                  {selectedUser && (
+                    selectedUser.banned
+                      ? <Button variant="outline" onClick={() => quickUnban(selectedUser)}>Lift ban</Button>
+                      : <Button variant="destructive" onClick={() => quickBan(selectedUser)}><Ban className="h-4 w-4 mr-1" />Ban user</Button>
+                  )}
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </TabsContent>
+
           {/* Reports */}
           <TabsContent value="reports">
             <Card className="p-4 shadow-card overflow-x-auto">
