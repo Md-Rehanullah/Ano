@@ -384,6 +384,7 @@ const AdminDashboard = () => {
 
         <Tabs defaultValue="reports">
           <TabsList className="flex flex-wrap max-w-full mb-6 h-auto">
+            <TabsTrigger value="users"><Users className="h-3.5 w-3.5 mr-1" />Users</TabsTrigger>
             <TabsTrigger value="reports">Reports</TabsTrigger>
             <TabsTrigger value="moderation">Moderation</TabsTrigger>
             <TabsTrigger value="bans"><Ban className="h-3.5 w-3.5 mr-1" />Bans</TabsTrigger>
