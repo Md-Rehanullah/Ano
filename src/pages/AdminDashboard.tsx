@@ -255,6 +255,88 @@ const AdminDashboard = () => {
     loadAll();
   };
 
+  const loadUsers = async () => {
+    try {
+      const { data: sess } = await supabase.auth.getSession();
+      const token = sess.session?.access_token;
+      if (!token) throw new Error("Not signed in");
+      const { data, error } = await supabase.functions.invoke("admin-list-users", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      setUsers(((data as any)?.users || []) as UserRow[]);
+      setUsersLoaded(true);
+    } catch (e: any) {
+      toast({ title: "Failed to load users", description: e.message, variant: "destructive" });
+    }
+  };
+
+  const openUser = async (u: UserRow) => {
+    setSelectedUser(u);
+    setUserDetail(null);
+    setLoadingDetail(true);
+    try {
+      const [{ data: posts }, { data: comments }, { data: likes }] = await Promise.all([
+        supabase.from("posts").select("id, title, category, created_at, is_hidden").eq("user_id", u.user_id).order("created_at", { ascending: false }).limit(200),
+        supabase.from("answers").select("id, content, post_id, created_at").eq("user_id", u.user_id).order("created_at", { ascending: false }).limit(200),
+        supabase.from("liked_posts" as any).select("post_id, created_at").eq("user_id", u.user_id).order("created_at", { ascending: false }).limit(200),
+      ]);
+      const postIds = [...new Set([
+        ...((comments || []).map((c: any) => c.post_id)),
+        ...((likes as any[] || []).map((l: any) => l.post_id)),
+      ])];
+      let titleMap: Record<string, string> = {};
+      if (postIds.length) {
+        const { data: tps } = await supabase.from("posts").select("id, title").in("id", postIds);
+        titleMap = Object.fromEntries((tps || []).map((p: any) => [p.id, p.title]));
+      }
+      setUserDetail({
+        posts: (posts || []) as any,
+        comments: (comments || []).map((c: any) => ({ ...c, post_title: titleMap[c.post_id] || null })),
+        likes: ((likes as any[]) || []).map((l: any) => ({ ...l, post_title: titleMap[l.post_id] || null })),
+      });
+    } catch (e: any) {
+      toast({ title: "Failed to load activity", description: e.message, variant: "destructive" });
+    } finally {
+      setLoadingDetail(false);
+    }
+  };
+
+  const quickBan = async (u: UserRow) => {
+    if (!user) return;
+    if (!confirm(`Ban ${u.display_name || u.email || u.user_id} permanently?`)) return;
+    const { error } = await supabase.from("user_bans").upsert({
+      user_id: u.user_id, banned_by: user.id, reason: "Admin action", banned_until: null,
+    }, { onConflict: "user_id" });
+    if (error) { toast({ title: "Ban failed", description: error.message, variant: "destructive" }); return; }
+    await writeLog("ban_user", "user", u.user_id, { reason: "Admin action" });
+    toast({ title: "User banned" });
+    setUsers(prev => prev.map(x => x.user_id === u.user_id ? { ...x, banned: true } : x));
+  };
+
+  const quickUnban = async (u: UserRow) => {
+    const { error } = await supabase.from("user_bans").delete().eq("user_id", u.user_id);
+    if (error) { toast({ title: "Failed", variant: "destructive" }); return; }
+    await writeLog("unban_user", "user", u.user_id);
+    toast({ title: "Ban lifted" });
+    setUsers(prev => prev.map(x => x.user_id === u.user_id ? { ...x, banned: false } : x));
+  };
+
+  const adminDeletePostInline = async (postId: string) => {
+    if (!confirm("Delete this post permanently?")) return;
+    const { error } = await supabase.from("posts").delete().eq("id", postId);
+    if (error) { toast({ title: "Failed", variant: "destructive" }); return; }
+    await writeLog("delete_post", "post", postId);
+    setUserDetail(d => d ? { ...d, posts: d.posts.filter(p => p.id !== postId) } : d);
+    toast({ title: "Post deleted" });
+  };
+
+  useEffect(() => {
+    if (isAdmin && !usersLoaded) loadUsers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAdmin]);
+
   if (authLoading || roleLoading || loading) {
     return <Layout><div className="container py-12 flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div></Layout>;
   }
