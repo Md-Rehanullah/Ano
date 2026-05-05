@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Camera, User, Loader2, Mail, Trash2, AlertTriangle } from "lucide-react";
+import { Camera, User, Loader2, Mail, Trash2, AlertTriangle, MapPin, Twitter, Instagram, Facebook } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -20,14 +20,23 @@ interface ProfileSettingsProps {
   displayName: string | null;
   avatarUrl: string | null;
   bio: string | null;
+  location?: string | null;
+  xUrl?: string | null;
+  instagramUrl?: string | null;
+  facebookUrl?: string | null;
   onUpdate: () => void;
 }
 
 const BIO_MAX = 300;
 
-const ProfileSettings = ({ userId, email, displayName, avatarUrl, bio, onUpdate }: ProfileSettingsProps) => {
+const ProfileSettings = ({ userId, email, displayName, avatarUrl, bio, location, xUrl, instagramUrl, facebookUrl, onUpdate }: ProfileSettingsProps) => {
   const [name, setName] = useState(displayName || "");
   const [bioText, setBioText] = useState(bio || "");
+  const [city, setCity] = useState(location || "");
+  const [x, setX] = useState(xUrl || "");
+  const [ig, setIg] = useState(instagramUrl || "");
+  const [fb, setFb] = useState(facebookUrl || "");
+  const [isSavingExtras, setIsSavingExtras] = useState(false);
   const [isSavingName, setIsSavingName] = useState(false);
   const [isSavingBio, setIsSavingBio] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
