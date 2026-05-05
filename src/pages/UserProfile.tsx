@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Lock, FileText, MessageCircle, ThumbsUp, ArrowLeft } from "lucide-react";
+import { Lock, FileText, MessageCircle, ThumbsUp, ArrowLeft, MapPin, Twitter, Instagram, Facebook } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
 import KarmaBadges from "@/components/KarmaBadges";
@@ -16,6 +16,10 @@ interface ProfileData {
   display_name: string | null;
   avatar_url: string | null;
   bio: string | null;
+  location: string | null;
+  x_url: string | null;
+  instagram_url: string | null;
+  facebook_url: string | null;
 }
 interface PostItem { id: string; title: string; description: string; category: string; likes: number; created_at: string; }
 interface AnswerItem { id: string; content: string; created_at: string; post: { id: string; title: string } | null; }
@@ -35,10 +39,10 @@ const UserProfile = () => {
       setLoading(true);
       const { data: prof } = await supabase
         .from("profiles")
-        .select("display_name, avatar_url, bio")
+        .select("display_name, avatar_url, bio, location, x_url, instagram_url, facebook_url")
         .eq("user_id", userId)
         .maybeSingle();
-      setProfile(prof);
+      setProfile(prof as any);
 
       const { data: postsData } = await supabase
         .from("posts")
