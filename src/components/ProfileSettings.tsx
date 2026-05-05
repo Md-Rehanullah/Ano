@@ -258,6 +258,43 @@ const ProfileSettings = ({ userId, email, displayName, avatarUrl, bio, location,
           </div>
         </div>
 
+        {/* Location */}
+        <div className="space-y-2">
+          <Label htmlFor="location" className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5" /> Location <span className="text-xs text-muted-foreground font-normal">(optional)</span></Label>
+          <Input
+            id="location"
+            value={city}
+            onChange={(e) => setCity(e.target.value)}
+            placeholder="e.g. Mumbai, India"
+            maxLength={120}
+          />
+          <p className="text-xs text-muted-foreground">Shown publicly on your profile. Leave empty to hide.</p>
+        </div>
+
+        {/* Social Links */}
+        <div className="space-y-3">
+          <Label>Social Links <span className="text-xs text-muted-foreground font-normal">(public, optional)</span></Label>
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Twitter className="h-4 w-4 text-muted-foreground shrink-0" />
+              <Input value={x} onChange={(e) => setX(e.target.value)} placeholder="https://x.com/yourhandle" />
+            </div>
+            <div className="flex items-center gap-2">
+              <Instagram className="h-4 w-4 text-muted-foreground shrink-0" />
+              <Input value={ig} onChange={(e) => setIg(e.target.value)} placeholder="https://instagram.com/yourhandle" />
+            </div>
+            <div className="flex items-center gap-2">
+              <Facebook className="h-4 w-4 text-muted-foreground shrink-0" />
+              <Input value={fb} onChange={(e) => setFb(e.target.value)} placeholder="https://facebook.com/yourhandle" />
+            </div>
+          </div>
+          <div className="flex justify-end">
+            <Button size="sm" onClick={handleSaveExtras} disabled={isSavingExtras}>
+              {isSavingExtras ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving...</> : "Save details"}
+            </Button>
+          </div>
+        </div>
+
         {/* Danger Zone */}
         <div className="pt-6 mt-2 border-t">
           <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-4 space-y-3">
