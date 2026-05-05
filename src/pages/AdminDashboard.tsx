@@ -52,6 +52,14 @@ const AdminDashboard = () => {
   const [chartData, setChartData] = useState<{ category: string; count: number }[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Users hub
+  const [users, setUsers] = useState<UserRow[]>([]);
+  const [usersLoaded, setUsersLoaded] = useState(false);
+  const [userSearch, setUserSearch] = useState("");
+  const [selectedUser, setSelectedUser] = useState<UserRow | null>(null);
+  const [userDetail, setUserDetail] = useState<UserDetail | null>(null);
+  const [loadingDetail, setLoadingDetail] = useState(false);
+
   // Ban / Warn dialog state
   const [banUserId, setBanUserId] = useState("");
   const [banReason, setBanReason] = useState("");
