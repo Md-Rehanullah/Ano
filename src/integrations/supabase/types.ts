@@ -168,6 +168,27 @@ export type Database = {
         }
         Relationships: []
       }
+      liked_posts: {
+        Row: {
+          created_at: string
+          id: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       moderation_log: {
         Row: {
           action: string
@@ -398,27 +419,39 @@ export type Database = {
           bio: string | null
           created_at: string
           display_name: string | null
+          facebook_url: string | null
           id: string
+          instagram_url: string | null
+          location: string | null
           updated_at: string
           user_id: string
+          x_url: string | null
         }
         Insert: {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
           display_name?: string | null
+          facebook_url?: string | null
           id?: string
+          instagram_url?: string | null
+          location?: string | null
           updated_at?: string
           user_id: string
+          x_url?: string | null
         }
         Update: {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
           display_name?: string | null
+          facebook_url?: string | null
           id?: string
+          instagram_url?: string | null
+          location?: string | null
           updated_at?: string
           user_id?: string
+          x_url?: string | null
         }
         Relationships: []
       }
