@@ -18,7 +18,7 @@ import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Loader2, Shield, Trash2, FileText, Mail, Users, BarChart3, Eye, EyeOff,
-  Pin, PinOff, Ban, AlertTriangle, History, UserX,
+  Pin, PinOff, Ban, AlertTriangle, History, UserX, UserSearch, ThumbsUp, MessageCircle,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
@@ -29,6 +29,12 @@ interface ModPost { id: string; title: string; user_id: string | null; category:
 interface BanRow { id: string; user_id: string; reason: string; banned_until: string | null; created_at: string; display_name?: string | null; }
 interface WarnRow { id: string; user_id: string; message: string; acknowledged: boolean; created_at: string; display_name?: string | null; }
 interface LogRow { id: string; actor_id: string; action: string; target_type: string | null; target_id: string | null; details: any; created_at: string; actor_name?: string | null; }
+interface UserRow { user_id: string; display_name: string | null; email: string | null; created_at: string; post_count: number; comment_count: number; like_count: number; banned: boolean; }
+interface UserDetail {
+  posts: { id: string; title: string; category: string; created_at: string; is_hidden: boolean }[];
+  comments: { id: string; content: string; post_id: string; post_title: string | null; created_at: string }[];
+  likes: { post_id: string; post_title: string | null; created_at: string }[];
+}
 
 const AdminDashboard = () => {
   const { user, loading: authLoading } = useAuth();
