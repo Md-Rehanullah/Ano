@@ -164,6 +164,34 @@ const ProfileSettings = ({ userId, email, displayName, avatarUrl, bio, location,
     }
   };
 
+  const handleSaveExtras = async () => {
+    setIsSavingExtras(true);
+    try {
+      const sanitize = (v: string) => {
+        const t = v.trim();
+        return t.length ? t.slice(0, 200) : null;
+      };
+      const payload = {
+        user_id: userId,
+        location: sanitize(city),
+        x_url: sanitize(x),
+        instagram_url: sanitize(ig),
+        facebook_url: sanitize(fb),
+      };
+      const { error } = await supabase
+        .from("profiles")
+        .upsert(payload, { onConflict: "user_id" });
+      if (error) throw error;
+      onUpdate();
+      toast({ title: "Profile details saved" });
+    } catch (e) {
+      console.error("Extras save error", e);
+      toast({ title: "Error", description: "Failed to save details.", variant: "destructive" });
+    } finally {
+      setIsSavingExtras(false);
+    }
+  };
+
   return (
     <Card className="p-6 shadow-card">
       <h2 className="text-lg font-semibold mb-6">Profile Settings</h2>
