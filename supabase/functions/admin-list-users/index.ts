@@ -42,7 +42,8 @@ Deno.serve(async (req) => {
     const token = authHeader.replace("Bearer ", "");
     const { data: claimsData, error: claimsErr } = await userClient.auth.getClaims(token);
     if (claimsErr || !claimsData?.claims) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      console.error("admin-list-users: getClaims failed", claimsErr);
+      return new Response(JSON.stringify({ error: "Unauthorized: invalid token" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -52,18 +53,27 @@ Deno.serve(async (req) => {
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
 
     // Verify caller is an admin
-    const { data: roleRow } = await admin
+    const { data: roleRow, error: roleErr } = await admin
       .from("user_roles")
       .select("role")
       .eq("user_id", callerId)
       .eq("role", "admin")
       .maybeSingle();
+    if (roleErr) {
+      console.error("admin-list-users: role check failed", roleErr);
+      return new Response(JSON.stringify({ error: `Role check failed: ${roleErr.message}` }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     if (!roleRow) {
-      return new Response(JSON.stringify({ error: "Forbidden" }), {
+      console.warn("admin-list-users: caller not admin", { callerId });
+      return new Response(JSON.stringify({ error: "Forbidden: admin role required" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
 
     // Page through auth users (up to 1000)
     const { data: usersPage, error: listErr } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
