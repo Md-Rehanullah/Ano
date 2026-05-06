@@ -19,6 +19,7 @@ interface ProfileSettingsProps {
   email?: string | null;
   displayName: string | null;
   avatarUrl: string | null;
+  bannerUrl?: string | null;
   bio: string | null;
   location?: string | null;
   xUrl?: string | null;
@@ -29,7 +30,19 @@ interface ProfileSettingsProps {
 
 const BIO_MAX = 300;
 
-const ProfileSettings = ({ userId, email, displayName, avatarUrl, bio, location, xUrl, instagramUrl, facebookUrl, onUpdate }: ProfileSettingsProps) => {
+// CSS gradient presets that map 1:1 to a `background-image` value stored in `banner_url`.
+const PRESET_BANNERS: { id: string; label: string; value: string }[] = [
+  { id: "teal",   label: "Teal Dream",     value: "linear-gradient(135deg,#0ea5c5 0%,#22d3ee 100%)" },
+  { id: "sunset", label: "Sunset",         value: "linear-gradient(135deg,#f97316 0%,#ec4899 100%)" },
+  { id: "forest", label: "Forest",         value: "linear-gradient(135deg,#059669 0%,#84cc16 100%)" },
+  { id: "midnight", label: "Midnight",     value: "linear-gradient(135deg,#1e293b 0%,#6366f1 100%)" },
+  { id: "rose",   label: "Rose",           value: "linear-gradient(135deg,#be185d 0%,#fb7185 100%)" },
+  { id: "amber",  label: "Amber",          value: "linear-gradient(135deg,#b45309 0%,#fbbf24 100%)" },
+];
+
+const isPresetGradient = (v: string | null | undefined) => !!v && v.startsWith("linear-gradient");
+
+const ProfileSettings = ({ userId, email, displayName, avatarUrl, bannerUrl, bio, location, xUrl, instagramUrl, facebookUrl, onUpdate }: ProfileSettingsProps) => {
   const [name, setName] = useState(displayName || "");
   const [bioText, setBioText] = useState(bio || "");
   const [city, setCity] = useState(location || "");
@@ -40,10 +53,14 @@ const ProfileSettings = ({ userId, email, displayName, avatarUrl, bio, location,
   const [isSavingName, setIsSavingName] = useState(false);
   const [isSavingBio, setIsSavingBio] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isUploadingBanner, setIsUploadingBanner] = useState(false);
+  const [isSavingBanner, setIsSavingBanner] = useState(false);
+  const [bannerPreview, setBannerPreview] = useState<string | null>(bannerUrl || null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [confirmText, setConfirmText] = useState("");
   const [previewUrl, setPreviewUrl] = useState<string | null>(avatarUrl);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const bannerInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
