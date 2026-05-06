@@ -447,6 +447,7 @@ const Profile = () => {
               email={user.email}
               displayName={userProfile?.display_name || null}
               avatarUrl={userProfile?.avatar_url || null}
+              bannerUrl={userProfile?.banner_url || null}
               bio={userProfile?.bio || null}
               location={userProfile?.location || null}
               xUrl={userProfile?.x_url || null}
