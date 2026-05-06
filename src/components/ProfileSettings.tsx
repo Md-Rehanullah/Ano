@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Camera, User, Loader2, Mail, Trash2, AlertTriangle, MapPin, Twitter, Instagram, Facebook } from "lucide-react";
+import { Camera, User, Loader2, Mail, Trash2, AlertTriangle, MapPin, Twitter, Instagram, Facebook, Image as ImageIcon, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
