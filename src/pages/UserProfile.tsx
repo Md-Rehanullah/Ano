@@ -39,7 +39,7 @@ const UserProfile = () => {
       setLoading(true);
       const { data: prof } = await supabase
         .from("profiles")
-        .select("display_name, avatar_url, bio, location, x_url, instagram_url, facebook_url")
+        .select("display_name, avatar_url, banner_url, bio, location, x_url, instagram_url, facebook_url")
         .eq("user_id", userId)
         .maybeSingle();
       setProfile(prof as any);
@@ -92,7 +92,14 @@ const UserProfile = () => {
         </Button>
 
         <Card className="overflow-hidden mb-6 shadow-card">
-          <div className="h-28 sm:h-36 bg-gradient-to-br from-primary/80 via-primary to-primary/60" />
+          <div
+            className="h-28 sm:h-40 bg-gradient-to-br from-primary/80 via-primary to-primary/60 bg-cover bg-center"
+            style={(profile as any)?.banner_url ? (
+              ((profile as any).banner_url as string).startsWith("linear-gradient")
+                ? { backgroundImage: (profile as any).banner_url }
+                : { backgroundImage: `url(${(profile as any).banner_url})` }
+            ) : undefined}
+          />
           <div className="px-6 pb-6 -mt-12 sm:-mt-14 flex flex-col items-center text-center">
             <div className="rounded-full ring-4 ring-background">
               <UserAvatar src={profile?.avatar_url} name={profile?.display_name} className="h-24 w-24" fallbackClassName="text-2xl" />

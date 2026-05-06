@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Camera, User, Loader2, Mail, Trash2, AlertTriangle, MapPin, Twitter, Instagram, Facebook } from "lucide-react";
+import { Camera, User, Loader2, Mail, Trash2, AlertTriangle, MapPin, Twitter, Instagram, Facebook, Image as ImageIcon, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -19,6 +19,7 @@ interface ProfileSettingsProps {
   email?: string | null;
   displayName: string | null;
   avatarUrl: string | null;
+  bannerUrl?: string | null;
   bio: string | null;
   location?: string | null;
   xUrl?: string | null;
@@ -29,7 +30,19 @@ interface ProfileSettingsProps {
 
 const BIO_MAX = 300;
 
-const ProfileSettings = ({ userId, email, displayName, avatarUrl, bio, location, xUrl, instagramUrl, facebookUrl, onUpdate }: ProfileSettingsProps) => {
+// CSS gradient presets that map 1:1 to a `background-image` value stored in `banner_url`.
+const PRESET_BANNERS: { id: string; label: string; value: string }[] = [
+  { id: "teal",   label: "Teal Dream",     value: "linear-gradient(135deg,#0ea5c5 0%,#22d3ee 100%)" },
+  { id: "sunset", label: "Sunset",         value: "linear-gradient(135deg,#f97316 0%,#ec4899 100%)" },
+  { id: "forest", label: "Forest",         value: "linear-gradient(135deg,#059669 0%,#84cc16 100%)" },
+  { id: "midnight", label: "Midnight",     value: "linear-gradient(135deg,#1e293b 0%,#6366f1 100%)" },
+  { id: "rose",   label: "Rose",           value: "linear-gradient(135deg,#be185d 0%,#fb7185 100%)" },
+  { id: "amber",  label: "Amber",          value: "linear-gradient(135deg,#b45309 0%,#fbbf24 100%)" },
+];
+
+const isPresetGradient = (v: string | null | undefined) => !!v && v.startsWith("linear-gradient");
+
+const ProfileSettings = ({ userId, email, displayName, avatarUrl, bannerUrl, bio, location, xUrl, instagramUrl, facebookUrl, onUpdate }: ProfileSettingsProps) => {
   const [name, setName] = useState(displayName || "");
   const [bioText, setBioText] = useState(bio || "");
   const [city, setCity] = useState(location || "");
@@ -40,10 +53,14 @@ const ProfileSettings = ({ userId, email, displayName, avatarUrl, bio, location,
   const [isSavingName, setIsSavingName] = useState(false);
   const [isSavingBio, setIsSavingBio] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isUploadingBanner, setIsUploadingBanner] = useState(false);
+  const [isSavingBanner, setIsSavingBanner] = useState(false);
+  const [bannerPreview, setBannerPreview] = useState<string | null>(bannerUrl || null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [confirmText, setConfirmText] = useState("");
   const [previewUrl, setPreviewUrl] = useState<string | null>(avatarUrl);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const bannerInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -192,6 +209,55 @@ const ProfileSettings = ({ userId, email, displayName, avatarUrl, bio, location,
     }
   };
 
+  // ---- Banner handlers ----
+  const handleBannerClick = () => bannerInputRef.current?.click();
+
+  const updateBanner = async (newValue: string | null) => {
+    setIsSavingBanner(true);
+    try {
+      const { error } = await supabase.from("profiles")
+        .upsert({ user_id: userId, banner_url: newValue } as any, { onConflict: "user_id" });
+      if (error) throw error;
+      setBannerPreview(newValue);
+      onUpdate();
+      toast({ title: "Banner updated" });
+    } catch (e) {
+      console.error("Banner save error", e);
+      toast({ title: "Error", description: "Failed to update banner.", variant: "destructive" });
+    } finally {
+      setIsSavingBanner(false);
+    }
+  };
+
+  const handleBannerFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "Invalid file type", description: "Please upload an image.", variant: "destructive" });
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: "File too large", description: "Please upload an image smaller than 5MB.", variant: "destructive" });
+      return;
+    }
+    setIsUploadingBanner(true);
+    try {
+      const ext = file.name.split(".").pop() || "jpg";
+      const fileName = `${userId}/banner.${ext}`;
+      const { error: upErr } = await supabase.storage.from("banners").upload(fileName, file, { upsert: true });
+      if (upErr) throw upErr;
+      const { data: { publicUrl } } = supabase.storage.from("banners").getPublicUrl(fileName);
+      const url = `${publicUrl}?t=${Date.now()}`;
+      await updateBanner(url);
+    } catch (err) {
+      console.error("Banner upload error", err);
+      toast({ title: "Upload failed", description: "Please try again.", variant: "destructive" });
+    } finally {
+      setIsUploadingBanner(false);
+      if (bannerInputRef.current) bannerInputRef.current.value = "";
+    }
+  };
+
   return (
     <Card className="p-6 shadow-card">
       <h2 className="text-lg font-semibold mb-6">Profile Settings</h2>
@@ -221,7 +287,60 @@ const ProfileSettings = ({ userId, email, displayName, avatarUrl, bio, location,
           </div>
         </div>
 
-        {/* Email (read-only) */}
+        {/* Banner */}
+        <div className="space-y-2">
+          <Label className="flex items-center gap-1.5"><ImageIcon className="h-3.5 w-3.5" /> Profile Banner</Label>
+          <div
+            className="relative h-28 w-full rounded-lg overflow-hidden border bg-gradient-to-br from-primary/80 via-primary to-primary/60"
+            style={
+              bannerPreview && !isPresetGradient(bannerPreview)
+                ? { backgroundImage: `url(${bannerPreview})`, backgroundSize: "cover", backgroundPosition: "center" }
+                : isPresetGradient(bannerPreview)
+                  ? { backgroundImage: bannerPreview as string }
+                  : undefined
+            }
+          >
+            {(isUploadingBanner || isSavingBanner) && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                <Loader2 className="h-6 w-6 text-white animate-spin" />
+              </div>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-2 pt-2">
+            <Button type="button" size="sm" variant="outline" onClick={handleBannerClick} disabled={isUploadingBanner || isSavingBanner}>
+              <Camera className="h-4 w-4 mr-1.5" /> Upload image
+            </Button>
+            {bannerPreview && (
+              <Button type="button" size="sm" variant="ghost" onClick={() => updateBanner(null)} disabled={isUploadingBanner || isSavingBanner}>
+                <Trash2 className="h-4 w-4 mr-1.5" /> Reset
+              </Button>
+            )}
+            <input ref={bannerInputRef} type="file" accept="image/*" onChange={handleBannerFileChange} className="hidden" />
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground mb-2">Or pick a preset gradient:</p>
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+              {PRESET_BANNERS.map(p => {
+                const active = bannerPreview === p.value;
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => updateBanner(p.value)}
+                    disabled={isSavingBanner || isUploadingBanner}
+                    style={{ backgroundImage: p.value }}
+                    aria-label={p.label}
+                    className={`relative h-12 rounded-md border-2 transition-all ${active ? "border-primary ring-2 ring-primary/30" : "border-transparent hover:border-primary/40"}`}
+                  >
+                    {active && <Check className="absolute inset-0 m-auto h-5 w-5 text-white drop-shadow" />}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground">Wide-format image recommended (e.g. 1500×500). Max 5MB.</p>
+        </div>
+
         <div className="space-y-2">
           <Label className="flex items-center gap-1.5"><Mail className="h-3.5 w-3.5" /> Email Address</Label>
           <Input value={email || ""} readOnly disabled className="bg-muted/40" />

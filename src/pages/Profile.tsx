@@ -51,6 +51,7 @@ interface UserAnswer {
 interface UserProfile {
   display_name: string | null;
   avatar_url: string | null;
+  banner_url: string | null;
   bio: string | null;
   location: string | null;
   x_url: string | null;
@@ -100,7 +101,7 @@ const Profile = () => {
 
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('display_name, avatar_url, bio, location, x_url, instagram_url, facebook_url')
+        .select('display_name, avatar_url, banner_url, bio, location, x_url, instagram_url, facebook_url')
         .eq('user_id', user.id)
         .maybeSingle();
       if (profileError) throw profileError;
@@ -251,7 +252,10 @@ const Profile = () => {
       <div className="container mx-auto px-4 pb-10 max-w-4xl">
         {/* Hero Header */}
         <Card className="overflow-hidden mb-6 shadow-card">
-          <div className="h-32 sm:h-40 bg-gradient-to-br from-primary/80 via-primary to-primary/60 relative" />
+          <div
+            className="h-32 sm:h-44 bg-gradient-to-br from-primary/80 via-primary to-primary/60 relative bg-cover bg-center"
+            style={userProfile?.banner_url ? { backgroundImage: `url(${userProfile.banner_url})` } : undefined}
+          />
           <div className="px-6 pb-6 -mt-14 sm:-mt-16 flex flex-col items-center text-center">
             <Avatar className="h-28 w-28 sm:h-32 sm:w-32 border-4 border-background shadow-elegant">
               <AvatarImage src={userProfile?.avatar_url || undefined} alt="Profile avatar" />
@@ -443,6 +447,7 @@ const Profile = () => {
               email={user.email}
               displayName={userProfile?.display_name || null}
               avatarUrl={userProfile?.avatar_url || null}
+              bannerUrl={userProfile?.banner_url || null}
               bio={userProfile?.bio || null}
               location={userProfile?.location || null}
               xUrl={userProfile?.x_url || null}
