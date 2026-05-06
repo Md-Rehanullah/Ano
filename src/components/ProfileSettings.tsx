@@ -287,7 +287,60 @@ const ProfileSettings = ({ userId, email, displayName, avatarUrl, bannerUrl, bio
           </div>
         </div>
 
-        {/* Email (read-only) */}
+        {/* Banner */}
+        <div className="space-y-2">
+          <Label className="flex items-center gap-1.5"><ImageIcon className="h-3.5 w-3.5" /> Profile Banner</Label>
+          <div
+            className="relative h-28 w-full rounded-lg overflow-hidden border bg-gradient-to-br from-primary/80 via-primary to-primary/60"
+            style={
+              bannerPreview && !isPresetGradient(bannerPreview)
+                ? { backgroundImage: `url(${bannerPreview})`, backgroundSize: "cover", backgroundPosition: "center" }
+                : isPresetGradient(bannerPreview)
+                  ? { backgroundImage: bannerPreview as string }
+                  : undefined
+            }
+          >
+            {(isUploadingBanner || isSavingBanner) && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                <Loader2 className="h-6 w-6 text-white animate-spin" />
+              </div>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-2 pt-2">
+            <Button type="button" size="sm" variant="outline" onClick={handleBannerClick} disabled={isUploadingBanner || isSavingBanner}>
+              <Camera className="h-4 w-4 mr-1.5" /> Upload image
+            </Button>
+            {bannerPreview && (
+              <Button type="button" size="sm" variant="ghost" onClick={() => updateBanner(null)} disabled={isUploadingBanner || isSavingBanner}>
+                <Trash2 className="h-4 w-4 mr-1.5" /> Reset
+              </Button>
+            )}
+            <input ref={bannerInputRef} type="file" accept="image/*" onChange={handleBannerFileChange} className="hidden" />
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground mb-2">Or pick a preset gradient:</p>
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+              {PRESET_BANNERS.map(p => {
+                const active = bannerPreview === p.value;
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => updateBanner(p.value)}
+                    disabled={isSavingBanner || isUploadingBanner}
+                    style={{ backgroundImage: p.value }}
+                    aria-label={p.label}
+                    className={`relative h-12 rounded-md border-2 transition-all ${active ? "border-primary ring-2 ring-primary/30" : "border-transparent hover:border-primary/40"}`}
+                  >
+                    {active && <Check className="absolute inset-0 m-auto h-5 w-5 text-white drop-shadow" />}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground">Wide-format image recommended (e.g. 1500×500). Max 5MB.</p>
+        </div>
+
         <div className="space-y-2">
           <Label className="flex items-center gap-1.5"><Mail className="h-3.5 w-3.5" /> Email Address</Label>
           <Input value={email || ""} readOnly disabled className="bg-muted/40" />
