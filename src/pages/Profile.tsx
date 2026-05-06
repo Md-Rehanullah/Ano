@@ -101,7 +101,7 @@ const Profile = () => {
 
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('display_name, avatar_url, bio, location, x_url, instagram_url, facebook_url')
+        .select('display_name, avatar_url, banner_url, bio, location, x_url, instagram_url, facebook_url')
         .eq('user_id', user.id)
         .maybeSingle();
       if (profileError) throw profileError;
