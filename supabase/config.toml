@@ -10,3 +10,9 @@ verify_jwt = false
 
 [functions.admin-list-users]
 verify_jwt = false
+
+[functions.phone-otp-send]
+verify_jwt = false
+
+[functions.phone-otp-verify]
+verify_jwt = false
