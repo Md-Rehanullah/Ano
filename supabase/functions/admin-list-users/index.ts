@@ -78,7 +78,8 @@ Deno.serve(async (req) => {
     // Page through auth users (up to 1000)
     const { data: usersPage, error: listErr } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
     if (listErr) {
-      return new Response(JSON.stringify({ error: listErr.message }), {
+      console.error("admin-list-users: listUsers failed", listErr);
+      return new Response(JSON.stringify({ error: `listUsers failed: ${listErr.message}` }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
