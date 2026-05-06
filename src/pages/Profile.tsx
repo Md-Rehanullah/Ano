@@ -252,7 +252,10 @@ const Profile = () => {
       <div className="container mx-auto px-4 pb-10 max-w-4xl">
         {/* Hero Header */}
         <Card className="overflow-hidden mb-6 shadow-card">
-          <div className="h-32 sm:h-40 bg-gradient-to-br from-primary/80 via-primary to-primary/60 relative" />
+          <div
+            className="h-32 sm:h-44 bg-gradient-to-br from-primary/80 via-primary to-primary/60 relative bg-cover bg-center"
+            style={userProfile?.banner_url ? { backgroundImage: `url(${userProfile.banner_url})` } : undefined}
+          />
           <div className="px-6 pb-6 -mt-14 sm:-mt-16 flex flex-col items-center text-center">
             <Avatar className="h-28 w-28 sm:h-32 sm:w-32 border-4 border-background shadow-elegant">
               <AvatarImage src={userProfile?.avatar_url || undefined} alt="Profile avatar" />
