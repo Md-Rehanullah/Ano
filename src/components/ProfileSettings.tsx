@@ -209,6 +209,55 @@ const ProfileSettings = ({ userId, email, displayName, avatarUrl, bannerUrl, bio
     }
   };
 
+  // ---- Banner handlers ----
+  const handleBannerClick = () => bannerInputRef.current?.click();
+
+  const updateBanner = async (newValue: string | null) => {
+    setIsSavingBanner(true);
+    try {
+      const { error } = await supabase.from("profiles")
+        .upsert({ user_id: userId, banner_url: newValue } as any, { onConflict: "user_id" });
+      if (error) throw error;
+      setBannerPreview(newValue);
+      onUpdate();
+      toast({ title: "Banner updated" });
+    } catch (e) {
+      console.error("Banner save error", e);
+      toast({ title: "Error", description: "Failed to update banner.", variant: "destructive" });
+    } finally {
+      setIsSavingBanner(false);
+    }
+  };
+
+  const handleBannerFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "Invalid file type", description: "Please upload an image.", variant: "destructive" });
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: "File too large", description: "Please upload an image smaller than 5MB.", variant: "destructive" });
+      return;
+    }
+    setIsUploadingBanner(true);
+    try {
+      const ext = file.name.split(".").pop() || "jpg";
+      const fileName = `${userId}/banner.${ext}`;
+      const { error: upErr } = await supabase.storage.from("banners").upload(fileName, file, { upsert: true });
+      if (upErr) throw upErr;
+      const { data: { publicUrl } } = supabase.storage.from("banners").getPublicUrl(fileName);
+      const url = `${publicUrl}?t=${Date.now()}`;
+      await updateBanner(url);
+    } catch (err) {
+      console.error("Banner upload error", err);
+      toast({ title: "Upload failed", description: "Please try again.", variant: "destructive" });
+    } finally {
+      setIsUploadingBanner(false);
+      if (bannerInputRef.current) bannerInputRef.current.value = "";
+    }
+  };
+
   return (
     <Card className="p-6 shadow-card">
       <h2 className="text-lg font-semibold mb-6">Profile Settings</h2>
