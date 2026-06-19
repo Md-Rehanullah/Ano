@@ -16,6 +16,7 @@ import Auth from "./pages/Auth";
 
 import ResetPassword from "./pages/ResetPassword";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+import Terms from "./pages/Terms";
 import AdminDashboard from "./pages/AdminDashboard";
 import UserProfile, { PrivateProfile } from "./pages/UserProfile";
 import PostDetail from "./pages/PostDetail";
@@ -44,6 +45,7 @@ const App = () => (
               <Route path="/contact" element={<Contact />} />
               <Route path="/collaborate" element={<Collaborate />} />
               <Route path="/privacy" element={<PrivacyPolicy />} />
+              <Route path="/terms" element={<Terms />} />
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/post/:id" element={<PostDetail />} />

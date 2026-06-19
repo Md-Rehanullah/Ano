@@ -215,7 +215,6 @@ const Homepage = () => {
 
   const handleRefresh = useCallback(async () => {
     await Promise.all([fetchPosts(), user ? fetchBookmarks() : Promise.resolve()]);
-    toast({ title: "Feed updated", description: "Showing the latest posts." });
   }, [user]);
 
   return (
