@@ -31,6 +31,7 @@ const navItems = [
   { to: "/contact", label: "Contact", icon: Mail },
   { to: "/collaborate", label: "Collaborate", icon: Users },
   { to: "/privacy", label: "Privacy Policy", icon: Shield },
+  { to: "/terms", label: "Terms of Service", icon: FileText },
 ];
 
 const Layout = ({ children }: LayoutProps) => {

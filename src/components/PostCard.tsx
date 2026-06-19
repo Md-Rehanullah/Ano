@@ -4,7 +4,8 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { ThumbsUp, Share2, Flag, MessageCircle, Eye, Bookmark, BookmarkCheck, Pin, Pencil } from "lucide-react";
+import { Heart, Share2, Flag, MessageCircle, Eye, Bookmark, BookmarkCheck, Pin, Pencil } from "lucide-react";
+import { formatCount, hapticTap } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import UserAvatar from "@/components/UserAvatar";
@@ -91,6 +92,8 @@ const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmar
     authorAvatar: a.authorAvatar,
   }));
   const commentTree = buildCommentTree(flatComments);
+  // Count only top-level comments for the visible count — matches what the user sees collapsed.
+  const topLevelCount = flatComments.filter(c => !c.parent_id).length;
 
   const openAuthorProfile = () => {
     if (post.isSeed) {
@@ -223,19 +226,27 @@ const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmar
         {/* Action Buttons - single row */}
         <div className="flex items-center justify-between pt-1 border-t">
           <div className="flex items-center">
-            <Button variant="ghost" size="sm" onClick={() => onLike(post.id)}
-              className={`h-8 px-2 text-xs gap-1 ${userInteraction === 'like' ? 'text-primary bg-primary/10' : 'text-muted-foreground'}`}>
-              <ThumbsUp className="h-3.5 w-3.5" />
-              <span>{post.likes}</span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                if (userInteraction !== 'like') hapticTap(15);
+                onLike(post.id);
+              }}
+              className={`h-8 px-2 text-xs gap-1 transition-colors ${userInteraction === 'like' ? 'text-red-500' : 'text-muted-foreground hover:text-red-500'}`}
+              aria-label={userInteraction === 'like' ? 'Unlike' : 'Like'}
+            >
+              <Heart className={`h-3.5 w-3.5 ${userInteraction === 'like' ? 'fill-red-500 text-red-500' : ''}`} />
+              <span>{formatCount(post.likes)}</span>
             </Button>
             <Button variant="ghost" size="sm" onClick={() => setShowAnswerForm(!showAnswerForm)}
               className="h-8 px-2 text-xs gap-1 text-muted-foreground">
               <MessageCircle className="h-3.5 w-3.5" />
-              <span>{post.answers.length}</span>
+              <span>{formatCount(topLevelCount)}</span>
             </Button>
             <span className="flex items-center gap-1 text-xs text-muted-foreground px-2">
               <Eye className="h-3.5 w-3.5" />
-              <span>{post.views}</span>
+              <span>{formatCount(post.views)}</span>
             </span>
           </div>
           <div className="flex items-center">
@@ -279,7 +290,7 @@ const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmar
         )}
 
         {/* Nested comments — toggled */}
-        {post.answers.length > 0 && (
+        {topLevelCount > 0 && (
           <div className="border-t pt-3">
             <button
               type="button"
@@ -287,8 +298,8 @@ const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmar
               className="text-xs sm:text-sm font-medium text-primary hover:underline"
             >
               {showComments
-                ? `Hide ${post.answers.length === 1 ? 'comment' : 'comments'}`
-                : `Show ${post.answers.length} ${post.answers.length === 1 ? 'comment' : 'comments'}`}
+                ? `Hide ${topLevelCount === 1 ? 'comment' : 'comments'}`
+                : `Show ${topLevelCount} ${topLevelCount === 1 ? 'comment' : 'comments'}`}
             </button>
             {showComments && (
               <div className="space-y-3 mt-3">
@@ -304,7 +315,7 @@ const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmar
                   onClick={() => setShowComments(false)}
                   className="text-xs sm:text-sm font-medium text-primary hover:underline"
                 >
-                  Hide {post.answers.length === 1 ? 'comment' : 'comments'}
+                  Hide {topLevelCount === 1 ? 'comment' : 'comments'}
                 </button>
               </div>
             )}
