@@ -66,49 +66,66 @@ const Homepage = () => {
     if (data) setBookmarkedIds(new Set(data.map(b => b.post_id)));
   };
 
+  const SEEN_KEY = "bridge:seen-post-ids";
+  const getSeen = (): string[] => { try { return JSON.parse(localStorage.getItem(SEEN_KEY) || "[]"); } catch { return []; } };
+  const pushSeen = (ids: string[]) => {
+    const merged = Array.from(new Set([...ids, ...getSeen()])).slice(0, 100);
+    localStorage.setItem(SEEN_KEY, JSON.stringify(merged));
+  };
+
   const fetchPosts = async () => {
     if (!isOnline()) {
       const cached = loadFeedCache();
-      if (cached) {
-        setPosts(cached.posts as any);
-        toast({ title: "Offline", description: "Showing cached posts." });
-      }
+      if (cached) { setPosts(cached.posts as any); toast({ title: "Offline", description: "Showing cached posts." }); }
       setIsLoading(false);
       return;
     }
     try {
       setIsLoading(true);
-      const tenDaysAgo = new Date();
-      tenDaysAgo.setDate(tenDaysAgo.getDate() - 10);
-      const { data, error } = await supabase
-        .from('posts')
-        .select('*, answers(*)')
-        .or(`created_at.gte.${tenDaysAgo.toISOString()},is_seed.eq.true`)
-        .order('is_pinned', { ascending: false })
-        .order('created_at', { ascending: false });
-      if (error) {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      const seen = getSeen();
+      let { data, error } = await supabase.rpc('get_personalized_feed' as any, {
+        p_user_id: authUser?.id ?? null,
+        p_seen_ids: seen,
+        p_limit: 40,
+      });
+      // If we exhausted unseen posts, reset and refetch
+      if (!error && (!data || (data as any[]).length === 0) && seen.length > 0) {
+        localStorage.removeItem(SEEN_KEY);
+        const retry = await supabase.rpc('get_personalized_feed' as any, {
+          p_user_id: authUser?.id ?? null, p_seen_ids: [], p_limit: 40,
+        });
+        data = retry.data; error = retry.error;
+      }
+      if (error || !data) {
         const cached = loadFeedCache();
-        if (cached) {
-          setPosts(cached.posts as any);
-          toast({ title: "Showing cached posts", description: "Couldn't reach the server." });
-        } else {
-          toast({ title: "Error", description: "Failed to load posts.", variant: "destructive" });
-        }
+        if (cached) { setPosts(cached.posts as any); toast({ title: "Showing cached posts", description: "Couldn't reach the server." }); }
+        else toast({ title: "Error", description: "Failed to load posts.", variant: "destructive" });
         return;
       }
+      const postsArr = data as any[];
+      const postIdList = postsArr.map(p => p.id);
+      const { data: answersData } = postIdList.length
+        ? await supabase.from('answers').select('*').in('post_id', postIdList)
+        : { data: [] as any[] };
+      const answersByPost: Record<string, any[]> = {};
+      (answersData || []).forEach((a: any) => { (answersByPost[a.post_id] ||= []).push(a); });
 
-      const userIds = [...new Set([...data.map((p: any) => p.user_id), ...data.flatMap((p: any) => p.answers.map((a: any) => a.user_id))].filter(Boolean))];
+      const userIds = [...new Set([
+        ...postsArr.map((p: any) => p.user_id),
+        ...(answersData || []).map((a: any) => a.user_id),
+      ].filter(Boolean))];
       let profilesMap: Record<string, any> = {};
       if (userIds.length > 0) {
         const { data: profiles } = await supabase.from('profiles').select('user_id, display_name, avatar_url').in('user_id', userIds);
         if (profiles) profilesMap = Object.fromEntries(profiles.map(p => [p.user_id, p]));
       }
 
-      for (const post of data) {
+      for (const post of postsArr) {
         supabase.rpc('increment_post_views', { p_post_id: post.id }).then();
       }
 
-      const mapped: Post[] = data.map((post: any) => ({
+      const mapped: Post[] = postsArr.map((post: any) => ({
         id: post.id, title: post.title, description: post.description, category: post.category,
         likes: post.likes, dislikes: post.dislikes, views: (post.views || 0) + 1,
         imageUrl: post.image_url, videoUrl: post.video_url, created_at: post.created_at,
@@ -116,7 +133,7 @@ const Homepage = () => {
         authorName: profilesMap[post.user_id]?.display_name || post.seed_author_name || null,
         authorAvatar: profilesMap[post.user_id]?.avatar_url || null,
         authorUserId: post.user_id, isSeed: post.is_seed,
-        answers: post.answers.map((a: any) => ({
+        answers: (answersByPost[post.id] || []).map((a: any) => ({
           id: a.id, content: a.content, likes: a.likes, dislikes: a.dislikes, replies: [],
           created_at: a.created_at, parent_id: a.parent_id ?? null,
           authorName: profilesMap[a.user_id]?.display_name || a.seed_author_name || null,
@@ -124,6 +141,7 @@ const Homepage = () => {
         }))
       }));
       setPosts(mapped);
+      pushSeen(postIdList);
       saveFeedCache(mapped as any);
     } catch {
       const cached = loadFeedCache();
@@ -137,7 +155,7 @@ const Homepage = () => {
     if (!user) { navigate('/auth'); return; }
     try {
       const { data, error } = await supabase.from('posts').insert({
-        user_id: user.id, title: newPostData.title, description: newPostData.description,
+        user_id: user.id, title: newPostData.title || null, description: newPostData.description,
         category: newPostData.category, image_url: newPostData.imageUrl, video_url: newPostData.videoUrl
       }).select().single();
       if (error) throw error;
