@@ -1,11 +1,12 @@
-import { useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Camera, User, Loader2, Mail, Trash2, AlertTriangle, MapPin, Twitter, Instagram, Facebook, Image as ImageIcon, Check } from "lucide-react";
+import { Camera, User, Loader2, Mail, Trash2, AlertTriangle, MapPin, Twitter, Instagram, Facebook, Image as ImageIcon, Check, Lock, UserX } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -63,6 +64,45 @@ const ProfileSettings = ({ userId, email, displayName, avatarUrl, bannerUrl, bio
   const bannerInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Privacy + blocks
+  const [isPrivate, setIsPrivate] = useState<boolean>(false);
+  const [savingPrivacy, setSavingPrivacy] = useState(false);
+  const [blocked, setBlocked] = useState<Array<{ id: string; blocked_id: string; display_name: string | null; avatar_url: string | null }>>([]);
+
+  useEffect(() => {
+    (async () => {
+      const { data: prof } = await supabase.from("profiles").select("is_private" as any).eq("user_id", userId).maybeSingle();
+      if (prof) setIsPrivate(!!(prof as any).is_private);
+      await loadBlocks();
+    })();
+  }, [userId]);
+
+  const loadBlocks = async () => {
+    const { data } = await supabase.from("user_blocks" as any).select("id, blocked_id").eq("blocker_id", userId);
+    const rows = (data as any[]) || [];
+    if (!rows.length) { setBlocked([]); return; }
+    const ids = rows.map(r => r.blocked_id);
+    const { data: profs } = await supabase.from("profiles").select("user_id, display_name, avatar_url").in("user_id", ids);
+    const map = Object.fromEntries(((profs as any[]) || []).map(p => [p.user_id, p]));
+    setBlocked(rows.map(r => ({ id: r.id, blocked_id: r.blocked_id, display_name: map[r.blocked_id]?.display_name || "User", avatar_url: map[r.blocked_id]?.avatar_url || null })));
+  };
+
+  const togglePrivacy = async (next: boolean) => {
+    setSavingPrivacy(true);
+    setIsPrivate(next);
+    const { error } = await supabase.from("profiles").upsert({ user_id: userId, is_private: next } as any, { onConflict: "user_id" });
+    if (error) { setIsPrivate(!next); toast({ title: "Couldn't save", description: error.message, variant: "destructive" }); }
+    else toast({ title: next ? "Account is now private" : "Account is now public" });
+    setSavingPrivacy(false);
+  };
+
+  const unblock = async (id: string) => {
+    const { error } = await supabase.from("user_blocks" as any).delete().eq("id", id);
+    if (error) { toast({ title: "Couldn't unblock", variant: "destructive" }); return; }
+    setBlocked(b => b.filter(x => x.id !== id));
+    toast({ title: "Unblocked" });
+  };
 
   const handleDeleteAccount = async () => {
     setIsDeleting(true);
@@ -413,6 +453,39 @@ const ProfileSettings = ({ userId, email, displayName, avatarUrl, bannerUrl, bio
             </Button>
           </div>
         </div>
+
+        {/* Privacy */}
+        <div className="space-y-3 pt-6 border-t">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <Label className="flex items-center gap-1.5"><Lock className="h-3.5 w-3.5" /> Private account</Label>
+              <p className="text-xs text-muted-foreground mt-1">When on, your posts are hidden from everyone else. Only you can see them.</p>
+            </div>
+            <Switch checked={isPrivate} disabled={savingPrivacy} onCheckedChange={togglePrivacy} />
+          </div>
+        </div>
+
+        {/* Blocked users */}
+        <div className="space-y-3 pt-6 border-t">
+          <Label className="flex items-center gap-1.5"><UserX className="h-3.5 w-3.5" /> Blocked users</Label>
+          {blocked.length === 0 ? (
+            <p className="text-xs text-muted-foreground">You haven't blocked anyone yet.</p>
+          ) : (
+            <ul className="space-y-2">
+              {blocked.map(b => (
+                <li key={b.id} className="flex items-center justify-between gap-3 p-2 rounded-md border">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Avatar className="h-7 w-7"><AvatarImage src={b.avatar_url || undefined} /><AvatarFallback className="text-xs">{(b.display_name || "U")[0]}</AvatarFallback></Avatar>
+                    <span className="text-sm truncate">{b.display_name || "User"}</span>
+                  </div>
+                  <Button size="sm" variant="ghost" onClick={() => unblock(b.id)}>Unblock</Button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+
 
         {/* Danger Zone */}
         <div className="pt-6 mt-2 border-t">

@@ -4,7 +4,8 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Heart, Share2, Flag, MessageCircle, Eye, Bookmark, BookmarkCheck, Pin, Pencil } from "lucide-react";
+import { Heart, Share2, Flag, MessageCircle, Eye, Bookmark, BookmarkCheck, Pin, Pencil, MoreVertical, UserX } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { formatCount, hapticTap } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
@@ -15,6 +16,8 @@ import CommentThread, { buildCommentTree, Comment } from "@/components/CommentTh
 import MarkdownContent from "@/components/MarkdownContent";
 import PollBlock from "@/components/PollBlock";
 import { checkProfanity } from "@/lib/profanity";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Answer {
   id: string;
@@ -72,8 +75,23 @@ const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmar
   const [showReportForm, setShowReportForm] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [hidden, setHidden] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const handleBlockAuthor = async () => {
+    if (!user) { navigate('/auth'); return; }
+    if (!post.authorUserId || post.authorUserId === user.id) return;
+    if (!confirm(`Block ${post.authorName || 'this user'}? You won't see their posts or comments, and they won't see yours.`)) return;
+    const { error } = await supabase.from('user_blocks' as any).insert({ blocker_id: user.id, blocked_id: post.authorUserId });
+    if (error) { toast({ title: "Couldn't block", description: error.message, variant: "destructive" }); return; }
+    setHidden(true);
+    toast({ title: "User blocked" });
+    window.dispatchEvent(new CustomEvent("bridge:user-blocked", { detail: { userId: post.authorUserId } }));
+  };
+
+  if (hidden) return null;
 
   const isLong = post.description.length > READ_MORE_THRESHOLD;
   const visibleDescription = !expanded && isLong
@@ -165,7 +183,9 @@ const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmar
                   )}
                 </div>
               </div>
-              <h3 className="text-base sm:text-lg font-semibold">{post.title}</h3>
+              {post.title && post.title.trim() && (
+                <h3 className="text-base sm:text-lg font-semibold">{post.title}</h3>
+              )}
             </div>
           </button>
           <div className="flex items-center gap-1 ml-2 shrink-0">
@@ -175,8 +195,24 @@ const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmar
               </Badge>
             )}
             <Badge variant="secondary" className="text-[10px]">{post.category}</Badge>
+            {user && post.authorUserId && post.authorUserId !== user.id && !post.isSeed && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0" aria-label="More options">
+                    <MoreVertical className="h-3.5 w-3.5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={handleBlockAuthor} className="text-destructive">
+                    <UserX className="h-4 w-4 mr-2" /> Block {post.authorName || 'user'}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         </div>
+
+
 
         {/* Content Box */}
         <div className="bg-muted/30 rounded-lg p-3 sm:p-4">

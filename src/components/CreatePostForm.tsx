@@ -29,8 +29,7 @@ const categories = ["General", "Technology", "Education", "Lifestyle", "Other"];
 const DRAFT_KEY = "bridge:post-draft";
 
 interface Draft {
-  title: string;
-  description: string;
+  content: string;
   category: string;
   imageUrl: string;
   videoUrl: string;
@@ -40,7 +39,7 @@ interface Draft {
 }
 
 const emptyDraft: Draft = {
-  title: "", description: "", category: "General",
+  content: "", category: "General",
   imageUrl: "", videoUrl: "",
   pollEnabled: false, pollQuestion: "", pollOptions: ["", ""],
 };
@@ -55,13 +54,12 @@ const CreatePostForm = ({ onCreatePost }: CreatePostFormProps) => {
   const { toast } = useToast();
   const saveTimer = useRef<number | null>(null);
 
-  // Load draft on mount
   useEffect(() => {
     try {
       const raw = localStorage.getItem(DRAFT_KEY);
       if (raw) {
         const parsed = JSON.parse(raw) as Draft;
-        if (parsed.title || parsed.description) {
+        if (parsed.content) {
           setDraft({ ...emptyDraft, ...parsed });
           setHasDraft(true);
         }
@@ -69,12 +67,11 @@ const CreatePostForm = ({ onCreatePost }: CreatePostFormProps) => {
     } catch {}
   }, []);
 
-  // Auto-save with debounce
   useEffect(() => {
     if (!isOpen) return;
     if (saveTimer.current) window.clearTimeout(saveTimer.current);
     saveTimer.current = window.setTimeout(() => {
-      const isEmpty = !draft.title && !draft.description && !draft.imageUrl && !draft.videoUrl;
+      const isEmpty = !draft.content && !draft.imageUrl && !draft.videoUrl;
       if (isEmpty) localStorage.removeItem(DRAFT_KEY);
       else localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
     }, 600);
@@ -93,7 +90,7 @@ const CreatePostForm = ({ onCreatePost }: CreatePostFormProps) => {
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.type.startsWith('image/')) { toast({ title: "Invalid file type", description: "Please upload an image file.", variant: "destructive" }); return; }
+    if (!file.type.startsWith('image/')) { toast({ title: "Invalid file type", variant: "destructive" }); return; }
     if (file.size > 5 * 1024 * 1024) { toast({ title: "File too large", description: "Max 5MB.", variant: "destructive" }); return; }
     setIsUploading(true);
     try {
@@ -110,7 +107,7 @@ const CreatePostForm = ({ onCreatePost }: CreatePostFormProps) => {
   const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.type.startsWith('video/')) { toast({ title: "Invalid file type", description: "Please upload a video.", variant: "destructive" }); return; }
+    if (!file.type.startsWith('video/')) { toast({ title: "Invalid file type", variant: "destructive" }); return; }
     if (file.size > 50 * 1024 * 1024) { toast({ title: "File too large", description: "Max 50MB.", variant: "destructive" }); return; }
     setIsUploadingVideo(true);
     try {
@@ -126,20 +123,14 @@ const CreatePostForm = ({ onCreatePost }: CreatePostFormProps) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!draft.title.trim() || !draft.description.trim()) { toast({ title: "Missing information", variant: "destructive" }); return; }
+    if (!draft.content.trim()) { toast({ title: "Write something first", variant: "destructive" }); return; }
 
-    // Profanity / adult-content filter
-    const profanityCheck = checkProfanity(`${draft.title}\n${draft.description}\n${draft.pollQuestion}\n${draft.pollOptions.join("\n")}`);
+    const profanityCheck = checkProfanity(`${draft.content}\n${draft.pollQuestion}\n${draft.pollOptions.join("\n")}`);
     if (!profanityCheck.ok) {
-      toast({
-        title: "Inappropriate language detected",
-        description: `Please remove profane or adult content (matched: "${profanityCheck.match}").`,
-        variant: "destructive",
-      });
+      toast({ title: "Inappropriate language detected", description: `Please remove profane content (matched: "${profanityCheck.match}").`, variant: "destructive" });
       return;
     }
 
-    // Validate poll if enabled
     let pollPayload: { question: string; options: string[] } | undefined;
     if (draft.pollEnabled) {
       const opts = draft.pollOptions.map(o => o.trim()).filter(Boolean);
@@ -152,7 +143,7 @@ const CreatePostForm = ({ onCreatePost }: CreatePostFormProps) => {
 
     setIsChecking(true);
     try {
-      const result = await checkLinkSafety(`${draft.title}\n${draft.description}`);
+      const result = await checkLinkSafety(draft.content);
       const blocked = result.issues.filter(i => i.severity === "block");
       if (blocked.length > 0) {
         toast({ title: "Unsafe link detected", description: `${labelFor(blocked[0].reason)}: ${blocked[0].url}.`, variant: "destructive" });
@@ -164,8 +155,8 @@ const CreatePostForm = ({ onCreatePost }: CreatePostFormProps) => {
     } finally { setIsChecking(false); }
 
     onCreatePost({
-      title: draft.title.trim(),
-      description: draft.description.trim(),
+      title: "",
+      description: draft.content.trim(),
       category: draft.category,
       imageUrl: draft.imageUrl.trim() || undefined,
       videoUrl: draft.videoUrl.trim() || undefined,
@@ -181,7 +172,7 @@ const CreatePostForm = ({ onCreatePost }: CreatePostFormProps) => {
       <Card className="p-6 mb-6 shadow-card hover:shadow-elegant transition-all duration-300 cursor-pointer" onClick={() => setIsOpen(true)}>
         <div className="flex items-center justify-center space-x-2 text-muted-foreground hover:text-primary transition-colors">
           <PlusCircle className="h-5 w-5" />
-          <span className="font-medium">{hasDraft ? "Continue your draft…" : "Write Content / Ask Question"}</span>
+          <span className="font-medium">{hasDraft ? "Continue your draft…" : "Write a post"}</span>
         </div>
       </Card>
     );
@@ -190,7 +181,7 @@ const CreatePostForm = ({ onCreatePost }: CreatePostFormProps) => {
   return (
     <Card className="p-6 mb-6 shadow-elegant">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold">Create New Post</h2>
+        <h2 className="text-lg font-semibold">Write a post</h2>
         <div className="flex items-center gap-2">
           {hasDraft && (
             <Button type="button" variant="ghost" size="sm" className="h-7 text-xs" onClick={clearDraft}>
@@ -202,17 +193,13 @@ const CreatePostForm = ({ onCreatePost }: CreatePostFormProps) => {
       </div>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="title">Title/Heading *</Label>
-          <Input id="title" placeholder="Enter your question or content title..." value={draft.title} onChange={(e) => update("title", e.target.value)} maxLength={200} />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="description">Description/Question *</Label>
+          <Label htmlFor="post-content">Your post *</Label>
           <RichTextEditor
-            id="description"
-            value={draft.description}
-            onChange={(v) => update("description", v)}
-            placeholder="Provide more details... Markdown is supported."
-            minHeight="160px"
+            id="post-content"
+            value={draft.content}
+            onChange={(v) => update("content", v)}
+            placeholder="Share something, ask a question, post a puzzle… Markdown is supported."
+            minHeight="180px"
             maxLength={10000}
           />
         </div>
@@ -256,7 +243,6 @@ const CreatePostForm = ({ onCreatePost }: CreatePostFormProps) => {
           )}
         </div>
 
-        {/* Poll attachment */}
         <div className="space-y-2 border-t pt-4">
           <div className="flex items-center justify-between">
             <Label className="flex items-center gap-2">
@@ -266,24 +252,12 @@ const CreatePostForm = ({ onCreatePost }: CreatePostFormProps) => {
           </div>
           {draft.pollEnabled && (
             <div className="space-y-2 pl-1">
-              <Input
-                placeholder="Poll question..."
-                value={draft.pollQuestion}
-                onChange={(e) => update("pollQuestion", e.target.value)}
-                maxLength={200}
-              />
+              <Input placeholder="Poll question..." value={draft.pollQuestion} onChange={(e) => update("pollQuestion", e.target.value)} maxLength={200} />
               {draft.pollOptions.map((opt, i) => (
                 <div key={i} className="flex gap-2">
-                  <Input
-                    placeholder={`Option ${i + 1}`}
-                    value={opt}
-                    onChange={(e) => {
-                      const next = [...draft.pollOptions];
-                      next[i] = e.target.value;
-                      update("pollOptions", next);
-                    }}
-                    maxLength={100}
-                  />
+                  <Input placeholder={`Option ${i + 1}`} value={opt}
+                    onChange={(e) => { const next = [...draft.pollOptions]; next[i] = e.target.value; update("pollOptions", next); }}
+                    maxLength={100} />
                   {draft.pollOptions.length > 2 && (
                     <Button type="button" variant="ghost" size="sm" className="px-2"
                       onClick={() => update("pollOptions", draft.pollOptions.filter((_, j) => j !== i))}>
@@ -304,7 +278,7 @@ const CreatePostForm = ({ onCreatePost }: CreatePostFormProps) => {
 
         <div className="flex space-x-3 pt-4">
           <Button type="submit" className="flex-1" disabled={isChecking}>
-            {isChecking ? (<><Loader2 className="h-4 w-4 mr-2 animate-spin" />Checking links...</>) : "Post Question/Content"}
+            {isChecking ? (<><Loader2 className="h-4 w-4 mr-2 animate-spin" />Checking links...</>) : "Post"}
           </Button>
           <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>Save & Close</Button>
         </div>
