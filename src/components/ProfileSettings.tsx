@@ -454,6 +454,39 @@ const ProfileSettings = ({ userId, email, displayName, avatarUrl, bannerUrl, bio
           </div>
         </div>
 
+        {/* Privacy */}
+        <div className="space-y-3 pt-6 border-t">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <Label className="flex items-center gap-1.5"><Lock className="h-3.5 w-3.5" /> Private account</Label>
+              <p className="text-xs text-muted-foreground mt-1">When on, your posts are hidden from everyone else. Only you can see them.</p>
+            </div>
+            <Switch checked={isPrivate} disabled={savingPrivacy} onCheckedChange={togglePrivacy} />
+          </div>
+        </div>
+
+        {/* Blocked users */}
+        <div className="space-y-3 pt-6 border-t">
+          <Label className="flex items-center gap-1.5"><UserX className="h-3.5 w-3.5" /> Blocked users</Label>
+          {blocked.length === 0 ? (
+            <p className="text-xs text-muted-foreground">You haven't blocked anyone yet.</p>
+          ) : (
+            <ul className="space-y-2">
+              {blocked.map(b => (
+                <li key={b.id} className="flex items-center justify-between gap-3 p-2 rounded-md border">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Avatar className="h-7 w-7"><AvatarImage src={b.avatar_url || undefined} /><AvatarFallback className="text-xs">{(b.display_name || "U")[0]}</AvatarFallback></Avatar>
+                    <span className="text-sm truncate">{b.display_name || "User"}</span>
+                  </div>
+                  <Button size="sm" variant="ghost" onClick={() => unblock(b.id)}>Unblock</Button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+
+
         {/* Danger Zone */}
         <div className="pt-6 mt-2 border-t">
           <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-4 space-y-3">
