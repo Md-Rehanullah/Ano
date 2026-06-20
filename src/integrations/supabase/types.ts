@@ -258,36 +258,6 @@ export type Database = {
         }
         Relationships: []
       }
-      phone_otps: {
-        Row: {
-          attempts: number
-          code_hash: string
-          consumed: boolean
-          created_at: string
-          expires_at: string
-          id: string
-          phone: string
-        }
-        Insert: {
-          attempts?: number
-          code_hash: string
-          consumed?: boolean
-          created_at?: string
-          expires_at: string
-          id?: string
-          phone: string
-        }
-        Update: {
-          attempts?: number
-          code_hash?: string
-          consumed?: boolean
-          created_at?: string
-          expires_at?: string
-          id?: string
-          phone?: string
-        }
-        Relationships: []
-      }
       poll_options: {
         Row: {
           created_at: string
@@ -387,7 +357,7 @@ export type Database = {
         Row: {
           category: string
           created_at: string
-          description: string
+          description: string | null
           dislikes: number
           edited_at: string | null
           id: string
@@ -397,7 +367,7 @@ export type Database = {
           is_seed: boolean
           likes: number
           seed_author_name: string | null
-          title: string
+          title: string | null
           updated_at: string
           user_id: string | null
           video_url: string | null
@@ -406,7 +376,7 @@ export type Database = {
         Insert: {
           category: string
           created_at?: string
-          description: string
+          description?: string | null
           dislikes?: number
           edited_at?: string | null
           id?: string
@@ -416,7 +386,7 @@ export type Database = {
           is_seed?: boolean
           likes?: number
           seed_author_name?: string | null
-          title: string
+          title?: string | null
           updated_at?: string
           user_id?: string | null
           video_url?: string | null
@@ -425,7 +395,7 @@ export type Database = {
         Update: {
           category?: string
           created_at?: string
-          description?: string
+          description?: string | null
           dislikes?: number
           edited_at?: string | null
           id?: string
@@ -435,7 +405,7 @@ export type Database = {
           is_seed?: boolean
           likes?: number
           seed_author_name?: string | null
-          title?: string
+          title?: string | null
           updated_at?: string
           user_id?: string | null
           video_url?: string | null
@@ -453,6 +423,7 @@ export type Database = {
           facebook_url: string | null
           id: string
           instagram_url: string | null
+          is_private: boolean
           location: string | null
           updated_at: string
           user_id: string
@@ -467,6 +438,7 @@ export type Database = {
           facebook_url?: string | null
           id?: string
           instagram_url?: string | null
+          is_private?: boolean
           location?: string | null
           updated_at?: string
           user_id: string
@@ -481,6 +453,7 @@ export type Database = {
           facebook_url?: string | null
           id?: string
           instagram_url?: string | null
+          is_private?: boolean
           location?: string | null
           updated_at?: string
           user_id?: string
@@ -571,6 +544,27 @@ export type Database = {
           id?: string
           reason?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      user_blocks: {
+        Row: {
+          blocked_id: string
+          blocker_id: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          blocked_id: string
+          blocker_id: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          blocked_id?: string
+          blocker_id?: string
+          created_at?: string
+          id?: string
         }
         Relationships: []
       }
@@ -692,6 +686,34 @@ export type Database = {
       }
     }
     Functions: {
+      get_personalized_feed: {
+        Args: { p_limit?: number; p_seen_ids: string[]; p_user_id: string }
+        Returns: {
+          category: string
+          created_at: string
+          description: string | null
+          dislikes: number
+          edited_at: string | null
+          id: string
+          image_url: string | null
+          is_hidden: boolean
+          is_pinned: boolean
+          is_seed: boolean
+          likes: number
+          seed_author_name: string | null
+          title: string | null
+          updated_at: string
+          user_id: string | null
+          video_url: string | null
+          views: number
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "posts"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       get_user_interaction: {
         Args: { post_id: string; user_id: string }
         Returns: string
@@ -719,6 +741,11 @@ export type Database = {
         | { Args: { post_id: string; user_id: string }; Returns: undefined }
       increment_post_views: { Args: { p_post_id: string }; Returns: undefined }
       is_banned: { Args: { _user_id: string }; Returns: boolean }
+      is_blocked_with: {
+        Args: { _other: string; _viewer: string }
+        Returns: boolean
+      }
+      is_profile_private: { Args: { _uid: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
