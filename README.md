@@ -59,6 +59,28 @@ This project is built with:
 - React
 - shadcn-ui
 - Tailwind CSS
+- Expo (for mobile builds)
+- Capacitor (for native mobile features)
+
+## Mobile Build Options
+
+This project supports both Capacitor and EAS (Expo Application Services) for mobile builds:
+
+### EAS Builds
+
+To use EAS builds for iOS and Android:
+
+1. Install EAS CLI globally: `npm install -g eas-cli`
+2. Login to Expo: `eas login`
+3. Configure builds: `npm run eas:build:configure` (or `eas build:configure`)
+4. Build for specific platforms:
+   - `eas build --platform ios`
+   - `eas build --platform android`
+   - `eas build --platform all`
+
+### Capacitor Builds
+
+For traditional Capacitor builds, use the existing Capacitor configuration in `capacitor.config.ts`.
 
 ## How can I deploy this project?
 
