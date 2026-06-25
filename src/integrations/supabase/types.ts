@@ -714,6 +714,10 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_profile_access_state: {
+        Args: { p_profile_user_id: string }
+        Returns: string
+      }
       get_user_interaction: {
         Args: { post_id: string; user_id: string }
         Returns: string
