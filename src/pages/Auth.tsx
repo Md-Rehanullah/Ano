@@ -34,9 +34,14 @@ const Auth = () => {
 
   const handleGoogle = async () => {
     setLoading(true);
+    // On Capacitor the origin is capacitor://localhost, which Google rejects.
+    // Use the published web URL so OAuth always lands on a real https origin.
+    const isNative = !!(window as any).Capacitor?.isNativePlatform?.();
+    const webOrigin = "https://bridge99.lovable.app";
+    const redirectTo = isNative ? `${webOrigin}/` : `${window.location.origin}/`;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}/` },
+      options: { redirectTo },
     });
     if (error) {
       toast({ title: "Google sign-in failed", description: error.message, variant: "destructive" });

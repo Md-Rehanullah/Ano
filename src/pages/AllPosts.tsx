@@ -48,7 +48,16 @@ const AllPosts = () => {
 
   useEffect(() => {
     let result = posts;
-    if (searchQuery.trim()) result = result.filter(p => p.title.toLowerCase().includes(searchQuery.toLowerCase()));
+    const q = searchQuery.trim().toLowerCase();
+    if (q) {
+      result = result.filter(p => {
+        const title = (p.title || "").toLowerCase();
+        const desc = (p.description || "").toLowerCase();
+        const cat = (p.category || "").toLowerCase();
+        const author = (p.authorName || "").toLowerCase();
+        return title.includes(q) || desc.includes(q) || cat.includes(q) || author.includes(q);
+      });
+    }
     if (selectedCategory) result = result.filter(p => p.category === selectedCategory);
     setFilteredPosts(result);
   }, [searchQuery, posts, selectedCategory]);
