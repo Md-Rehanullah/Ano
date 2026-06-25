@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Lock, FileText, MessageCircle, ThumbsUp, ArrowLeft, MapPin, Twitter, Instagram, Facebook } from "lucide-react";
+import { Lock, FileText, MessageCircle, ThumbsUp, ArrowLeft, MapPin, Twitter, Instagram, Facebook, UserX } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
 import KarmaBadges from "@/components/KarmaBadges";
@@ -24,6 +24,8 @@ interface ProfileData {
 interface PostItem { id: string; title: string; description: string; category: string; likes: number; created_at: string; }
 interface AnswerItem { id: string; content: string; created_at: string; post: { id: string; title: string } | null; }
 
+type AccessState = "loading" | "visible" | "own" | "private" | "blocked" | "not_found";
+
 const UserProfile = () => {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
@@ -32,11 +34,22 @@ const UserProfile = () => {
   const [answers, setAnswers] = useState<AnswerItem[]>([]);
   const [karma, setKarma] = useState<KarmaStats>({ posts: 0, likes: 0, answers: 0, karma: 0 });
   const [loading, setLoading] = useState(true);
+  const [access, setAccess] = useState<AccessState>("loading");
 
   useEffect(() => {
     if (!userId) return;
     (async () => {
       setLoading(true);
+      // 1) Resolve what the viewer is allowed to see
+      const { data: stateRow } = await supabase.rpc("get_profile_access_state" as any, { p_profile_user_id: userId });
+      const state = (stateRow as any) || "not_found";
+      setAccess(state);
+
+      if (state === "private" || state === "blocked" || state === "not_found") {
+        setLoading(false);
+        return;
+      }
+
       const { data: prof } = await supabase
         .from("profiles")
         .select("display_name, avatar_url, banner_url, bio, location, x_url, instagram_url, facebook_url")
@@ -81,6 +94,34 @@ const UserProfile = () => {
       setLoading(false);
     })();
   }, [userId]);
+
+  if (access === "private" || access === "blocked" || access === "not_found") {
+    const isBlocked = access === "blocked";
+    const isMissing = access === "not_found";
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-16 max-w-md">
+          <Card className="p-8 text-center">
+            <div className="inline-flex items-center justify-center h-16 w-16 rounded-full bg-muted mb-4">
+              {isBlocked ? <UserX className="h-8 w-8 text-muted-foreground" /> : <Lock className="h-8 w-8 text-muted-foreground" />}
+            </div>
+            <h2 className="text-xl font-semibold mb-2">
+              {isBlocked ? "You can't view this profile" : isMissing ? "Profile not found" : "This account is private"}
+            </h2>
+            <p className="text-sm text-muted-foreground mb-6">
+              {isBlocked
+                ? "You and this user have blocked each other. Their profile and activity are hidden."
+                : isMissing
+                ? "We couldn't find this user."
+                : "The owner has set their profile to private. Their personal details are hidden, but their public posts are still visible in the feed."}
+            </p>
+            <Button onClick={() => navigate(-1)}>Go back</Button>
+          </Card>
+        </div>
+      </Layout>
+    );
+  }
+
 
   const totalLikes = posts.reduce((s, p) => s + (p.likes || 0), 0);
 
