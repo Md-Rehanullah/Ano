@@ -20,6 +20,7 @@ import Terms from "./pages/Terms";
 import AdminDashboard from "./pages/AdminDashboard";
 import UserProfile, { PrivateProfile } from "./pages/UserProfile";
 import PostDetail from "./pages/PostDetail";
+import DeleteAccount from "./pages/DeleteAccount";
 import NotFound from "./pages/NotFound";
 import BannedGate from "./components/BannedGate";
 
@@ -49,6 +50,7 @@ const App = () => (
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/post/:id" element={<PostDetail />} />
+              <Route path="/delete-account" element={<DeleteAccount />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
