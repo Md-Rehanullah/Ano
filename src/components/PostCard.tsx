@@ -239,13 +239,22 @@ const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmar
 
 
 
-        {/* Content Box */}
-        <div className="bg-muted/30 rounded-lg p-3 sm:p-4">
+        {/* Content Box — click to open post detail */}
+        <div
+          className={`bg-muted/30 rounded-lg p-3 sm:p-4 ${linkToDetail ? 'cursor-pointer hover:bg-muted/40 transition-colors' : ''}`}
+          onClick={(e) => {
+            if (!linkToDetail) return;
+            // Don't navigate when clicking inline links / buttons inside the markdown.
+            const target = e.target as HTMLElement;
+            if (target.closest('a, button')) return;
+            goToDetail();
+          }}
+        >
           <MarkdownContent>{visibleDescription}</MarkdownContent>
           {isLong && (
             <button
               type="button"
-              onClick={() => setExpanded(!expanded)}
+              onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
               className="mt-2 text-xs sm:text-sm font-medium text-primary hover:underline"
             >
               {expanded ? "Show less" : "Read more"}
@@ -343,9 +352,36 @@ const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmar
           <div className="space-y-3 p-4 bg-muted/50 rounded-lg">
             <Textarea placeholder="Write your comment..." value={newAnswer}
               onChange={(e) => setNewAnswer(e.target.value)} className="resize-none w-full min-h-20" />
+            <div className="flex items-center gap-2">
+              <input
+                id={`answer-img-${post.id}`}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAnswerImageUpload}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={uploadingAnswerImage}
+                onClick={() => document.getElementById(`answer-img-${post.id}`)?.click()}
+              >
+                {uploadingAnswerImage ? "Uploading…" : "📷 Add image"}
+              </Button>
+              {newAnswerImage && (
+                <span className="text-xs text-muted-foreground flex items-center gap-2">
+                  Image attached
+                  <button type="button" className="underline" onClick={() => setNewAnswerImage("")}>remove</button>
+                </span>
+              )}
+            </div>
+            {newAnswerImage && (
+              <img src={newAnswerImage} alt="comment attachment" className="max-h-40 rounded-md" />
+            )}
             <div className="flex gap-2">
               <Button size="sm" onClick={handleAddAnswer}>Post Comment</Button>
-              <Button size="sm" variant="outline" onClick={() => setShowAnswerForm(false)}>Cancel</Button>
+              <Button size="sm" variant="outline" onClick={() => { setShowAnswerForm(false); setNewAnswerImage(""); }}>Cancel</Button>
             </div>
           </div>
         )}
@@ -368,7 +404,7 @@ const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmar
                   comments={commentTree}
                   postId={post.id}
                   onLike={onAnswerLike}
-                  onReply={(pid, content, parentId) => onAddAnswer(pid, content, parentId)}
+                  onReply={(pid, content, parentId, imageUrl) => onAddAnswer(pid, content, parentId, imageUrl)}
                   canInteract={canInteract}
                 />
                 <button
