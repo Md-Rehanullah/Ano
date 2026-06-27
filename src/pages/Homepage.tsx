@@ -242,7 +242,7 @@ const Homepage = () => {
       <div className="container mx-auto px-4 py-6 max-w-4xl">
         <CreatePostForm onCreatePost={handleCreatePost} />
         <WeeklyLeaderboard />
-        <h2 className="text-lg font-semibold text-muted-foreground mb-4">Recent Posts (Last 10 Days)</h2>
+        <h2 className="text-lg font-semibold text-muted-foreground mb-4">Your Feed</h2>
         {isLoading ? (
           <div className="space-y-6">{[...Array(3)].map((_, i) => <PostCardSkeleton key={i} />)}</div>
         ) : posts.length === 0 ? (
