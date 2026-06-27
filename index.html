@@ -20,77 +20,10 @@
     <meta name="twitter:description" content="A place where curious minds connect." />
     <meta name="twitter:image" content="/images/bridge-logo.png" />
 
-    <style>
-      #splash-screen {
-        position: fixed;
-        inset: 0;
-        z-index: 99999;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: #000;
-        transition: opacity 0.5s ease-out;
-        overflow: hidden;
-      }
-      #splash-screen.fade-out { opacity: 0; pointer-events: none; }
-      #splash-video {
-        width: 100%;
-        height: 100%;
-        /* Mobile portrait: fill the whole screen */
-        object-fit: cover;
-      }
-      /* Tablet / laptop / desktop: show centered, no stretching */
-      @media (min-aspect-ratio: 4/5) and (min-width: 768px) {
-        #splash-video {
-          width: auto;
-          height: auto;
-          max-width: 90vw;
-          max-height: 90vh;
-          object-fit: contain;
-        }
-      }
-    </style>
   </head>
 
   <body>
-    <!-- Splash Screen -->
-    <div id="splash-screen">
-      <video id="splash-video" autoplay muted playsinline preload="auto" poster="/images/bridge-logo.png">
-        <source src="/splash.mp4" type="video/mp4" />
-      </video>
-    </div>
-
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-    <script>
-      (function() {
-        var splash = document.getElementById('splash-screen');
-        var video = document.getElementById('splash-video');
-        var removed = false;
-        function hide() {
-          if (removed || !splash) return;
-          removed = true;
-          splash.classList.add('fade-out');
-          setTimeout(function() { splash.remove(); }, 500);
-        }
-        // Show splash only on first launch of this session.
-        // When the user minimizes and reopens the app, sessionStorage persists,
-        // so the splash is skipped and they land back where they were.
-        try {
-          if (sessionStorage.getItem('bridge:splash-shown') === '1') {
-            hide();
-            return;
-          }
-          sessionStorage.setItem('bridge:splash-shown', '1');
-        } catch (e) { /* ignore */ }
-
-        if (video) {
-          video.addEventListener('ended', hide);
-          video.addEventListener('error', hide);
-        }
-        // Safety fallback in case video never fires events
-        setTimeout(hide, 6000);
-      })();
-    </script>
   </body>
 </html>

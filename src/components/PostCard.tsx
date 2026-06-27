@@ -29,6 +29,7 @@ interface Answer {
   parent_id?: string | null;
   authorName?: string;
   authorAvatar?: string;
+  imageUrl?: string | null;
 }
 
 interface Post {
@@ -55,20 +56,24 @@ interface PostCardProps {
   post: Post;
   onLike: (postId: string) => void;
   onReport: (postId: string, reason: string) => void;
-  onAddAnswer: (postId: string, answer: string, parentId?: string | null) => void;
+  onAddAnswer: (postId: string, answer: string, parentId?: string | null, imageUrl?: string | null) => void;
   onAnswerLike?: (answerId: string) => void;
   onBookmark?: (postId: string) => void;
   userInteraction?: 'like' | 'dislike' | null;
   isBookmarked?: boolean;
   /** True when the user can react/comment (online + signed-in flow handled by parent). */
   canInteract?: boolean;
+  /** When true, clicking the post body navigates to the post detail page. Default true. */
+  linkToDetail?: boolean;
 }
 
 // ~350 words ≈ 2300 chars
 const READ_MORE_THRESHOLD = 2300;
 
-const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmark, userInteraction, isBookmarked, canInteract = true }: PostCardProps) => {
+const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmark, userInteraction, isBookmarked, canInteract = true, linkToDetail = true }: PostCardProps) => {
   const [newAnswer, setNewAnswer] = useState("");
+  const [newAnswerImage, setNewAnswerImage] = useState("");
+  const [uploadingAnswerImage, setUploadingAnswerImage] = useState(false);
   const [showAnswerForm, setShowAnswerForm] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [reportReason, setReportReason] = useState("");
@@ -79,6 +84,24 @@ const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmar
   const { toast } = useToast();
   const navigate = useNavigate();
   const { user } = useAuth();
+
+  const goToDetail = () => { if (linkToDetail) navigate(`/post/${post.id}`); };
+
+  const handleAnswerImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { toast({ title: "Invalid file", variant: "destructive" }); return; }
+    if (file.size > 5 * 1024 * 1024) { toast({ title: "Max 5MB", variant: "destructive" }); return; }
+    setUploadingAnswerImage(true);
+    try {
+      const filePath = `comments/${Math.random()}.${file.name.split('.').pop()}`;
+      const { error } = await supabase.storage.from('post-images').upload(filePath, file);
+      if (error) throw error;
+      const { data: { publicUrl } } = supabase.storage.from('post-images').getPublicUrl(filePath);
+      setNewAnswerImage(publicUrl);
+    } catch { toast({ title: "Upload failed", variant: "destructive" }); }
+    finally { setUploadingAnswerImage(false); }
+  };
 
   const handleBlockAuthor = async () => {
     if (!user) { navigate('/auth'); return; }
@@ -108,6 +131,7 @@ const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmar
     parent_id: a.parent_id ?? null,
     authorName: a.authorName,
     authorAvatar: a.authorAvatar,
+    imageUrl: a.imageUrl ?? null,
   }));
   const commentTree = buildCommentTree(flatComments);
   // Count only top-level comments for the visible count — matches what the user sees collapsed.
@@ -139,7 +163,7 @@ const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmar
   };
 
   const handleAddAnswer = () => {
-    if (newAnswer.trim()) {
+    if (newAnswer.trim() || newAnswerImage) {
       const check = checkProfanity(newAnswer);
       if (!check.ok) {
         toast({
@@ -149,8 +173,9 @@ const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmar
         });
         return;
       }
-      onAddAnswer(post.id, newAnswer);
+      onAddAnswer(post.id, newAnswer || "", null, newAnswerImage || null);
       setNewAnswer("");
+      setNewAnswerImage("");
       setShowAnswerForm(false);
     }
   };
@@ -214,13 +239,22 @@ const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmar
 
 
 
-        {/* Content Box */}
-        <div className="bg-muted/30 rounded-lg p-3 sm:p-4">
+        {/* Content Box — click to open post detail */}
+        <div
+          className={`bg-muted/30 rounded-lg p-3 sm:p-4 ${linkToDetail ? 'cursor-pointer hover:bg-muted/40 transition-colors' : ''}`}
+          onClick={(e) => {
+            if (!linkToDetail) return;
+            // Don't navigate when clicking inline links / buttons inside the markdown.
+            const target = e.target as HTMLElement;
+            if (target.closest('a, button')) return;
+            goToDetail();
+          }}
+        >
           <MarkdownContent>{visibleDescription}</MarkdownContent>
           {isLong && (
             <button
               type="button"
-              onClick={() => setExpanded(!expanded)}
+              onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
               className="mt-2 text-xs sm:text-sm font-medium text-primary hover:underline"
             >
               {expanded ? "Show less" : "Read more"}
@@ -318,9 +352,36 @@ const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmar
           <div className="space-y-3 p-4 bg-muted/50 rounded-lg">
             <Textarea placeholder="Write your comment..." value={newAnswer}
               onChange={(e) => setNewAnswer(e.target.value)} className="resize-none w-full min-h-20" />
+            <div className="flex items-center gap-2">
+              <input
+                id={`answer-img-${post.id}`}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAnswerImageUpload}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={uploadingAnswerImage}
+                onClick={() => document.getElementById(`answer-img-${post.id}`)?.click()}
+              >
+                {uploadingAnswerImage ? "Uploading…" : "📷 Add image"}
+              </Button>
+              {newAnswerImage && (
+                <span className="text-xs text-muted-foreground flex items-center gap-2">
+                  Image attached
+                  <button type="button" className="underline" onClick={() => setNewAnswerImage("")}>remove</button>
+                </span>
+              )}
+            </div>
+            {newAnswerImage && (
+              <img src={newAnswerImage} alt="comment attachment" className="max-h-40 rounded-md" />
+            )}
             <div className="flex gap-2">
               <Button size="sm" onClick={handleAddAnswer}>Post Comment</Button>
-              <Button size="sm" variant="outline" onClick={() => setShowAnswerForm(false)}>Cancel</Button>
+              <Button size="sm" variant="outline" onClick={() => { setShowAnswerForm(false); setNewAnswerImage(""); }}>Cancel</Button>
             </div>
           </div>
         )}
@@ -343,7 +404,7 @@ const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmar
                   comments={commentTree}
                   postId={post.id}
                   onLike={onAnswerLike}
-                  onReply={(pid, content, parentId) => onAddAnswer(pid, content, parentId)}
+                  onReply={(pid, content, parentId, imageUrl) => onAddAnswer(pid, content, parentId, imageUrl)}
                   canInteract={canInteract}
                 />
                 <button

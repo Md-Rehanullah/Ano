@@ -23,6 +23,10 @@ export interface CreatePostPayload {
 
 interface CreatePostFormProps {
   onCreatePost: (post: CreatePostPayload) => void;
+  /** When true, render the expanded form directly (no collapsed prompt). */
+  forceOpen?: boolean;
+  /** Called when the user clicks Cancel/Close in forceOpen mode. */
+  onRequestClose?: () => void;
 }
 
 const categories = ["General", "Technology", "Education", "Lifestyle", "Other"];
@@ -44,8 +48,9 @@ const emptyDraft: Draft = {
   pollEnabled: false, pollQuestion: "", pollOptions: ["", ""],
 };
 
-const CreatePostForm = ({ onCreatePost }: CreatePostFormProps) => {
-  const [isOpen, setIsOpen] = useState(false);
+const CreatePostForm = ({ onCreatePost, forceOpen = false, onRequestClose }: CreatePostFormProps) => {
+  const [isOpenState, setIsOpen] = useState(false);
+  const isOpen = forceOpen || isOpenState;
   const [draft, setDraft] = useState<Draft>(emptyDraft);
   const [hasDraft, setHasDraft] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -163,7 +168,8 @@ const CreatePostForm = ({ onCreatePost }: CreatePostFormProps) => {
       poll: pollPayload,
     });
     clearDraft();
-    setIsOpen(false);
+    if (!forceOpen) setIsOpen(false);
+    onRequestClose?.();
     toast({ title: "Post created!" });
   };
 
@@ -178,8 +184,13 @@ const CreatePostForm = ({ onCreatePost }: CreatePostFormProps) => {
     );
   }
 
+  const handleClose = () => {
+    if (forceOpen) onRequestClose?.();
+    else setIsOpen(false);
+  };
+
   return (
-    <Card className="p-6 mb-6 shadow-elegant">
+    <Card className={forceOpen ? "p-0 shadow-none border-0" : "p-6 mb-6 shadow-elegant"}>
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold">Write a post</h2>
         <div className="flex items-center gap-2">
@@ -188,7 +199,7 @@ const CreatePostForm = ({ onCreatePost }: CreatePostFormProps) => {
               <Trash2 className="h-3 w-3 mr-1" /> Clear draft
             </Button>
           )}
-          <Button variant="ghost" size="sm" onClick={() => setIsOpen(false)} className="h-8 w-8 p-0"><X className="h-4 w-4" /></Button>
+          <Button variant="ghost" size="sm" onClick={handleClose} className="h-8 w-8 p-0"><X className="h-4 w-4" /></Button>
         </div>
       </div>
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -280,7 +291,7 @@ const CreatePostForm = ({ onCreatePost }: CreatePostFormProps) => {
           <Button type="submit" className="flex-1" disabled={isChecking}>
             {isChecking ? (<><Loader2 className="h-4 w-4 mr-2 animate-spin" />Checking links...</>) : "Post"}
           </Button>
-          <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>Save & Close</Button>
+          <Button type="button" variant="outline" onClick={handleClose}>Save & Close</Button>
         </div>
         <p className="text-[10px] text-muted-foreground flex items-center gap-1">
           <ShieldAlert className="h-3 w-3" /> Drafts auto-save locally. Links are scanned before publishing.

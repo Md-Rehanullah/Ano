@@ -19,6 +19,7 @@ import type { CreatePostPayload } from "@/components/CreatePostForm";
 interface Answer {
   id: string; content: string; likes: number; dislikes: number; replies: Answer[];
   created_at: string; parent_id?: string | null; authorName?: string; authorAvatar?: string;
+  imageUrl?: string | null;
 }
 interface Post {
   id: string; title: string; description: string; category: string;
@@ -138,6 +139,7 @@ const Homepage = () => {
           created_at: a.created_at, parent_id: a.parent_id ?? null,
           authorName: profilesMap[a.user_id]?.display_name || a.seed_author_name || null,
           authorAvatar: profilesMap[a.user_id]?.avatar_url || null,
+          imageUrl: a.image_url ?? null,
         }))
       }));
       setPosts(mapped);
@@ -202,12 +204,13 @@ const Homepage = () => {
     toast({ title: "Report submitted", description: "Thank you for helping keep our community safe." });
   };
 
-  const handleAddAnswer = async (postId: string, content: string, parentId?: string | null) => {
+  const handleAddAnswer = async (postId: string, content: string, parentId?: string | null, imageUrl?: string | null) => {
     if (!user) { navigate('/auth'); return; }
     if (!isOnline()) { toast({ title: "You're offline", description: "Reconnect to post a comment.", variant: "destructive" }); return; }
     try {
       const insertPayload: any = { post_id: postId, user_id: user.id, content };
       if (parentId) insertPayload.parent_id = parentId;
+      if (imageUrl) insertPayload.image_url = imageUrl;
       await supabase.from('answers').insert(insertPayload).select().single();
       await fetchPosts();
       toast({ title: parentId ? "Reply posted!" : "Comment posted!" });
@@ -242,7 +245,7 @@ const Homepage = () => {
       <div className="container mx-auto px-4 py-6 max-w-4xl">
         <CreatePostForm onCreatePost={handleCreatePost} />
         <WeeklyLeaderboard />
-        <h2 className="text-lg font-semibold text-muted-foreground mb-4">Recent Posts (Last 10 Days)</h2>
+        <h2 className="text-lg font-semibold text-muted-foreground mb-4">Your Feed</h2>
         {isLoading ? (
           <div className="space-y-6">{[...Array(3)].map((_, i) => <PostCardSkeleton key={i} />)}</div>
         ) : posts.length === 0 ? (

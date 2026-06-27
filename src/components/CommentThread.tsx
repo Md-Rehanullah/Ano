@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { ThumbsUp, MessageCircle, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
+import { ThumbsUp, MessageCircle, ChevronDown, ChevronUp, Loader2, ImagePlus, X } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import UserAvatar from "@/components/UserAvatar";
 import MarkdownContent from "@/components/MarkdownContent";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { checkProfanity } from "@/lib/profanity";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface Comment {
   id: string;
@@ -18,6 +19,7 @@ export interface Comment {
   parent_id?: string | null;
   authorName?: string | null;
   authorAvatar?: string | null;
+  imageUrl?: string | null;
   replies?: Comment[];
 }
 
@@ -26,22 +28,40 @@ interface Props {
   postId: string;
   depth?: number;
   onLike?: (commentId: string) => void;
-  onReply: (postId: string, content: string, parentId: string) => Promise<void> | void;
+  onReply: (postId: string, content: string, parentId: string, imageUrl?: string | null) => Promise<void> | void;
   /** Are unauthenticated actions allowed (will redirect on click)? */
   canInteract: boolean;
 }
 
-const MAX_INDENT = 5; // visual indent stops here; deeper replies still render but don't keep indenting
+const MAX_INDENT = 5;
 
 const CommentNode = ({ comment, postId, depth = 0, onLike, onReply, canInteract }: Props) => {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
+  const [image, setImage] = useState("");
+  const [uploading, setUploading] = useState(false);
   const [posting, setPosting] = useState(false);
   const [showReplies, setShowReplies] = useState(false);
   const { toast } = useToast();
 
+  const uploadImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { toast({ title: "Invalid file", variant: "destructive" }); return; }
+    if (file.size > 5 * 1024 * 1024) { toast({ title: "Max 5MB", variant: "destructive" }); return; }
+    setUploading(true);
+    try {
+      const filePath = `comments/${Math.random()}.${file.name.split('.').pop()}`;
+      const { error } = await supabase.storage.from('post-images').upload(filePath, file);
+      if (error) throw error;
+      const { data: { publicUrl } } = supabase.storage.from('post-images').getPublicUrl(filePath);
+      setImage(publicUrl);
+    } catch { toast({ title: "Upload failed", variant: "destructive" }); }
+    finally { setUploading(false); }
+  };
+
   const submit = async () => {
-    if (!text.trim()) return;
+    if (!text.trim() && !image) return;
     const profanityCheck = checkProfanity(text);
     if (!profanityCheck.ok) {
       toast({
@@ -53,8 +73,9 @@ const CommentNode = ({ comment, postId, depth = 0, onLike, onReply, canInteract 
     }
     setPosting(true);
     try {
-      await onReply(postId, text.trim(), comment.id);
+      await onReply(postId, text.trim(), comment.id, image || null);
       setText("");
+      setImage("");
       setOpen(false);
     } finally {
       setPosting(false);
@@ -101,6 +122,9 @@ const CommentNode = ({ comment, postId, depth = 0, onLike, onReply, canInteract 
         </div>
 
         <div className="mb-2"><MarkdownContent className="text-sm">{comment.content}</MarkdownContent></div>
+        {comment.imageUrl && (
+          <img src={comment.imageUrl} alt="comment attachment" loading="lazy" className="mb-2 max-h-72 rounded-md w-auto" />
+        )}
 
         <div className="flex items-center gap-1 text-xs text-muted-foreground">
           <button
@@ -131,11 +155,28 @@ const CommentNode = ({ comment, postId, depth = 0, onLike, onReply, canInteract 
               maxLength={2000}
               disabled={!canInteract}
             />
+            <div className="flex items-center gap-2">
+              <input id={`reply-img-${comment.id}`} type="file" accept="image/*" className="hidden" onChange={uploadImage} />
+              <Button
+                type="button" variant="outline" size="sm" disabled={uploading || !canInteract}
+                onClick={() => document.getElementById(`reply-img-${comment.id}`)?.click()}
+                className="h-7 text-xs"
+              >
+                <ImagePlus className="h-3 w-3 mr-1" />
+                {uploading ? "Uploading…" : (image ? "Replace" : "Add image")}
+              </Button>
+              {image && (
+                <button type="button" onClick={() => setImage("")} className="text-[11px] text-muted-foreground hover:text-foreground flex items-center gap-1">
+                  <X className="h-3 w-3" /> remove
+                </button>
+              )}
+            </div>
+            {image && <img src={image} alt="reply attachment" className="max-h-32 rounded-md" />}
             <div className="flex gap-2">
-              <Button size="sm" onClick={submit} disabled={posting || !text.trim() || !canInteract}>
+              <Button size="sm" onClick={submit} disabled={posting || (!text.trim() && !image) || !canInteract}>
                 {posting ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" />Posting...</> : "Post Reply"}
               </Button>
-              <Button size="sm" variant="outline" onClick={() => { setOpen(false); setText(""); }}>
+              <Button size="sm" variant="outline" onClick={() => { setOpen(false); setText(""); setImage(""); }}>
                 Cancel
               </Button>
             </div>
@@ -174,11 +215,10 @@ interface ThreadProps {
   comments: Comment[];
   postId: string;
   onLike?: (commentId: string) => void;
-  onReply: (postId: string, content: string, parentId: string) => Promise<void> | void;
+  onReply: (postId: string, content: string, parentId: string, imageUrl?: string | null) => Promise<void> | void;
   canInteract: boolean;
 }
 
-/** Builds a tree from a flat list using parent_id, then renders recursively. */
 export const buildCommentTree = (flat: Comment[]): Comment[] => {
   const byId = new Map<string, Comment>();
   flat.forEach(c => byId.set(c.id, { ...c, replies: [] }));
@@ -190,7 +230,6 @@ export const buildCommentTree = (flat: Comment[]): Comment[] => {
       roots.push(c);
     }
   });
-  // Sort siblings oldest-first so threads read naturally
   const sortRec = (arr: Comment[]) => {
     arr.sort((a, b) => +new Date(a.created_at) - +new Date(b.created_at));
     arr.forEach(c => c.replies && sortRec(c.replies));

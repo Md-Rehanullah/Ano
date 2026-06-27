@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Moon, Sun, LogIn, LogOut, User, Menu, ArrowUp, CheckCircle, Home, FileText, Info, Mail, Users, Download, Bookmark, Shield, LayoutDashboard, Smartphone } from "lucide-react";
+import { Moon, Sun, LogIn, LogOut, User, Menu, ArrowUp, Home, FileText, Info, Mail, Users, Download, Bookmark, Shield, LayoutDashboard, Smartphone } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
@@ -146,10 +146,7 @@ const Layout = ({ children }: LayoutProps) => {
               {user && <NotificationBell />}
               {user ? (
                 <Link to="/profile" className="flex items-center space-x-2 bg-primary/10 px-2 py-1 rounded-full border border-primary/20 hover:bg-primary/20 transition-colors">
-                  <div className="relative">
-                    <UserAvatar src={avatarUrl} name={displayName} className="h-7 w-7 ring-0" fallbackClassName="text-[11px]" />
-                    <CheckCircle className="absolute -top-1 -right-1 h-3 w-3 text-green-500 fill-current bg-card rounded-full" />
-                  </div>
+                  <UserAvatar src={avatarUrl} name={displayName} className="h-7 w-7 ring-0" fallbackClassName="text-[11px]" />
                   <span className="text-sm font-medium text-primary hidden sm:inline pr-1">Profile</span>
                 </Link>
               ) : (

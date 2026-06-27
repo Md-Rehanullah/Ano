@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 interface Answer {
   id: string; content: string; likes: number; dislikes: number; replies: Answer[];
   created_at: string; parent_id?: string | null; authorName?: string; authorAvatar?: string;
+  imageUrl?: string | null;
 }
 interface Post {
   id: string; title: string; description: string; category: string;
@@ -61,6 +62,7 @@ const PostDetail = () => {
         created_at: a.created_at, parent_id: a.parent_id ?? null,
         authorName: pmap[a.user_id]?.display_name || a.seed_author_name || null,
         authorAvatar: pmap[a.user_id]?.avatar_url || null,
+        imageUrl: a.image_url ?? null,
       })),
     });
     setLoading(false);
@@ -125,7 +127,7 @@ const PostDetail = () => {
         ) : (
           <PostCard post={post} onLike={handleLike} onReport={handleReport}
             onAddAnswer={handleAddAnswer} onAnswerLike={handleAnswerLike} onBookmark={handleBookmark}
-            userInteraction={interactions[post.id] || null} isBookmarked={isBookmarked} canInteract />
+            userInteraction={interactions[post.id] || null} isBookmarked={isBookmarked} canInteract linkToDetail={false} />
         )}
       </div>
     </Layout>
