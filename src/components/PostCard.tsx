@@ -131,6 +131,7 @@ const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmar
     parent_id: a.parent_id ?? null,
     authorName: a.authorName,
     authorAvatar: a.authorAvatar,
+    imageUrl: a.imageUrl ?? null,
   }));
   const commentTree = buildCommentTree(flatComments);
   // Count only top-level comments for the visible count — matches what the user sees collapsed.
@@ -162,7 +163,7 @@ const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmar
   };
 
   const handleAddAnswer = () => {
-    if (newAnswer.trim()) {
+    if (newAnswer.trim() || newAnswerImage) {
       const check = checkProfanity(newAnswer);
       if (!check.ok) {
         toast({
@@ -172,8 +173,9 @@ const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmar
         });
         return;
       }
-      onAddAnswer(post.id, newAnswer);
+      onAddAnswer(post.id, newAnswer || "", null, newAnswerImage || null);
       setNewAnswer("");
+      setNewAnswerImage("");
       setShowAnswerForm(false);
     }
   };
