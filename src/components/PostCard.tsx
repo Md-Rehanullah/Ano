@@ -29,6 +29,7 @@ interface Answer {
   parent_id?: string | null;
   authorName?: string;
   authorAvatar?: string;
+  imageUrl?: string | null;
 }
 
 interface Post {
@@ -55,20 +56,24 @@ interface PostCardProps {
   post: Post;
   onLike: (postId: string) => void;
   onReport: (postId: string, reason: string) => void;
-  onAddAnswer: (postId: string, answer: string, parentId?: string | null) => void;
+  onAddAnswer: (postId: string, answer: string, parentId?: string | null, imageUrl?: string | null) => void;
   onAnswerLike?: (answerId: string) => void;
   onBookmark?: (postId: string) => void;
   userInteraction?: 'like' | 'dislike' | null;
   isBookmarked?: boolean;
   /** True when the user can react/comment (online + signed-in flow handled by parent). */
   canInteract?: boolean;
+  /** When true, clicking the post body navigates to the post detail page. Default true. */
+  linkToDetail?: boolean;
 }
 
 // ~350 words ≈ 2300 chars
 const READ_MORE_THRESHOLD = 2300;
 
-const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmark, userInteraction, isBookmarked, canInteract = true }: PostCardProps) => {
+const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmark, userInteraction, isBookmarked, canInteract = true, linkToDetail = true }: PostCardProps) => {
   const [newAnswer, setNewAnswer] = useState("");
+  const [newAnswerImage, setNewAnswerImage] = useState("");
+  const [uploadingAnswerImage, setUploadingAnswerImage] = useState(false);
   const [showAnswerForm, setShowAnswerForm] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [reportReason, setReportReason] = useState("");
@@ -79,6 +84,24 @@ const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmar
   const { toast } = useToast();
   const navigate = useNavigate();
   const { user } = useAuth();
+
+  const goToDetail = () => { if (linkToDetail) navigate(`/post/${post.id}`); };
+
+  const handleAnswerImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { toast({ title: "Invalid file", variant: "destructive" }); return; }
+    if (file.size > 5 * 1024 * 1024) { toast({ title: "Max 5MB", variant: "destructive" }); return; }
+    setUploadingAnswerImage(true);
+    try {
+      const filePath = `comments/${Math.random()}.${file.name.split('.').pop()}`;
+      const { error } = await supabase.storage.from('post-images').upload(filePath, file);
+      if (error) throw error;
+      const { data: { publicUrl } } = supabase.storage.from('post-images').getPublicUrl(filePath);
+      setNewAnswerImage(publicUrl);
+    } catch { toast({ title: "Upload failed", variant: "destructive" }); }
+    finally { setUploadingAnswerImage(false); }
+  };
 
   const handleBlockAuthor = async () => {
     if (!user) { navigate('/auth'); return; }
