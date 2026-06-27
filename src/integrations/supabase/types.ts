@@ -55,6 +55,7 @@ export type Database = {
           created_at: string
           dislikes: number
           id: string
+          image_url: string | null
           is_seed: boolean
           likes: number
           parent_id: string | null
@@ -68,6 +69,7 @@ export type Database = {
           created_at?: string
           dislikes?: number
           id?: string
+          image_url?: string | null
           is_seed?: boolean
           likes?: number
           parent_id?: string | null
@@ -81,6 +83,7 @@ export type Database = {
           created_at?: string
           dislikes?: number
           id?: string
+          image_url?: string | null
           is_seed?: boolean
           likes?: number
           parent_id?: string | null
