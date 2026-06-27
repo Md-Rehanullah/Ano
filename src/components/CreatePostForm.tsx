@@ -199,7 +199,7 @@ const CreatePostForm = ({ onCreatePost, forceOpen = false, onRequestClose }: Cre
               <Trash2 className="h-3 w-3 mr-1" /> Clear draft
             </Button>
           )}
-          <Button variant="ghost" size="sm" onClick={() => setIsOpen(false)} className="h-8 w-8 p-0"><X className="h-4 w-4" /></Button>
+          <Button variant="ghost" size="sm" onClick={handleClose} className="h-8 w-8 p-0"><X className="h-4 w-4" /></Button>
         </div>
       </div>
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -291,7 +291,7 @@ const CreatePostForm = ({ onCreatePost, forceOpen = false, onRequestClose }: Cre
           <Button type="submit" className="flex-1" disabled={isChecking}>
             {isChecking ? (<><Loader2 className="h-4 w-4 mr-2 animate-spin" />Checking links...</>) : "Post"}
           </Button>
-          <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>Save & Close</Button>
+          <Button type="button" variant="outline" onClick={handleClose}>Save & Close</Button>
         </div>
         <p className="text-[10px] text-muted-foreground flex items-center gap-1">
           <ShieldAlert className="h-3 w-3" /> Drafts auto-save locally. Links are scanned before publishing.
