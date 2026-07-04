@@ -192,7 +192,7 @@ const Homepage = () => {
     setInteraction(postId, 'like');
     setPosts(prev => prev.map(p => p.id === postId ? { ...p, likes: p.likes + 1 } : p));
     try {
-      const { error } = await supabase.rpc('increment_post_likes' as any, { post_id: postId, user_id: user.id });
+      const { error } = await supabase.rpc('increment_post_likes' as any, { post_id: postId });
       if (error) throw error;
     } catch { setInteraction(postId, ci); setPosts(prev => prev.map(p => p.id === postId ? { ...p, likes: p.likes - 1 } : p)); }
   };
@@ -219,7 +219,7 @@ const Homepage = () => {
 
   const handleAnswerLike = async (answerId: string) => {
     if (!user) { navigate('/auth'); return; }
-    try { await supabase.rpc('increment_answer_likes', { answer_id: answerId, user_id: user.id }); }
+    try { await supabase.rpc('increment_answer_likes' as any, { answer_id: answerId }); }
     catch { toast({ title: "Error", variant: "destructive" }); }
   };
 

@@ -105,7 +105,7 @@ const AllPosts = () => {
     const ci = interactions[postId]; if (ci === 'like') return;
     setInteraction(postId, 'like');
     setPosts(prev => prev.map(p => p.id === postId ? { ...p, likes: p.likes + 1 } : p));
-    try { const { error } = await supabase.rpc('increment_post_likes' as any, { post_id: postId, user_id: user.id }); if (error) throw error; }
+    try { const { error } = await supabase.rpc('increment_post_likes' as any, { post_id: postId }); if (error) throw error; }
     catch { setInteraction(postId, ci); setPosts(prev => prev.map(p => p.id === postId ? { ...p, likes: p.likes - 1 } : p)); }
   };
 
@@ -126,7 +126,7 @@ const AllPosts = () => {
 
   const handleAnswerLike = async (answerId: string) => {
     if (!user) { navigate('/auth'); return; }
-    try { await supabase.rpc('increment_answer_likes', { answer_id: answerId, user_id: user.id }); } catch {}
+    try { await supabase.rpc('increment_answer_likes' as any, { answer_id: answerId }); } catch {}
   };
 
   const handleBookmark = async (postId: string) => {

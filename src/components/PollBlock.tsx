@@ -46,18 +46,22 @@ const PollBlock = ({ postId }: Props) => {
       .eq("poll_id", (poll as any).id)
       .order("position", { ascending: true });
 
-    const { data: votes } = await supabase
-      .from("poll_votes" as any)
-      .select("option_id, user_id")
-      .eq("poll_id", (poll as any).id);
+    // Aggregate counts via SECURITY DEFINER RPC (public-safe, no per-user leakage)
+    const { data: tally } = await supabase.rpc("get_poll_tally" as any, { p_poll_id: (poll as any).id });
+    const tallyMap: Record<string, number> = {};
+    (tally || []).forEach((t: any) => { tallyMap[t.option_id] = Number(t.votes) || 0; });
 
-    const tally: Record<string, number> = {};
-    (votes || []).forEach((v: any) => { tally[v.option_id] = (tally[v.option_id] || 0) + 1; });
-
-    setOptions((opts || []).map((o: any) => ({ id: o.id, label: o.label, votes: tally[o.id] || 0 })));
+    setOptions((opts || []).map((o: any) => ({ id: o.id, label: o.label, votes: tallyMap[o.id] || 0 })));
     if (user) {
-      const mine = (votes || []).find((v: any) => v.user_id === user.id);
+      const { data: mine } = await supabase
+        .from("poll_votes" as any)
+        .select("option_id")
+        .eq("poll_id", (poll as any).id)
+        .eq("user_id", user.id)
+        .maybeSingle();
       setMyVote(mine ? (mine as any).option_id : null);
+    } else {
+      setMyVote(null);
     }
     setLoading(false);
   };

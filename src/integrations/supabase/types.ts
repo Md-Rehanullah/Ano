@@ -717,14 +717,18 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_poll_tally: {
+        Args: { p_poll_id: string }
+        Returns: {
+          option_id: string
+          votes: number
+        }[]
+      }
       get_profile_access_state: {
         Args: { p_profile_user_id: string }
         Returns: string
       }
-      get_user_interaction: {
-        Args: { post_id: string; user_id: string }
-        Returns: string
-      }
+      get_user_interaction: { Args: { post_id: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -733,19 +737,15 @@ export type Database = {
         Returns: boolean
       }
       increment_answer_dislikes: {
-        Args: { answer_id: string; user_id: string }
+        Args: { answer_id: string }
         Returns: undefined
       }
       increment_answer_likes: {
-        Args: { answer_id: string; user_id: string }
+        Args: { answer_id: string }
         Returns: undefined
       }
-      increment_post_dislikes:
-        | { Args: { post_id: string }; Returns: undefined }
-        | { Args: { post_id: string; user_id: string }; Returns: undefined }
-      increment_post_likes:
-        | { Args: { post_id: string }; Returns: undefined }
-        | { Args: { post_id: string; user_id: string }; Returns: undefined }
+      increment_post_dislikes: { Args: { post_id: string }; Returns: undefined }
+      increment_post_likes: { Args: { post_id: string }; Returns: undefined }
       increment_post_views: { Args: { p_post_id: string }; Returns: undefined }
       is_banned: { Args: { _user_id: string }; Returns: boolean }
       is_blocked_with: {

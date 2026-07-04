@@ -80,7 +80,7 @@ const PostDetail = () => {
     const ci = interactions[postId]; if (ci === 'like') return;
     setInteraction(postId, 'like');
     setPost(p => p ? { ...p, likes: p.likes + 1 } : p);
-    try { await supabase.rpc('increment_post_likes' as any, { post_id: postId, user_id: user.id }); }
+    try { await supabase.rpc('increment_post_likes' as any, { post_id: postId }); }
     catch { setInteraction(postId, ci); setPost(p => p ? { ...p, likes: p.likes - 1 } : p); }
   };
   const handleReport = async (postId: string, reason: string) => {
@@ -99,7 +99,7 @@ const PostDetail = () => {
   };
   const handleAnswerLike = async (answerId: string) => {
     if (!user) { navigate('/auth'); return; }
-    await supabase.rpc('increment_answer_likes', { answer_id: answerId, user_id: user.id });
+    await supabase.rpc('increment_answer_likes' as any, { answer_id: answerId });
   };
   const handleBookmark = async (postId: string) => {
     if (!user) { navigate('/auth'); return; }
