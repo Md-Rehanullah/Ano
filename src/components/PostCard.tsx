@@ -13,6 +13,7 @@ import UserAvatar from "@/components/UserAvatar";
 import MediaLightbox from "@/components/MediaLightbox";
 import VideoPlayer from "@/components/VideoPlayer";
 import CommentThread, { buildCommentTree, Comment } from "@/components/CommentThread";
+import ReportDialog from "@/components/ReportDialog";
 import MarkdownContent from "@/components/MarkdownContent";
 import PollBlock from "@/components/PollBlock";
 import { checkProfanity } from "@/lib/profanity";
@@ -76,8 +77,7 @@ const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmar
   const [uploadingAnswerImage, setUploadingAnswerImage] = useState(false);
   const [showAnswerForm, setShowAnswerForm] = useState(false);
   const [showComments, setShowComments] = useState(false);
-  const [reportReason, setReportReason] = useState("");
-  const [showReportForm, setShowReportForm] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [hidden, setHidden] = useState(false);
@@ -157,12 +157,9 @@ const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmar
     }
   };
 
-  const handleReport = () => {
-    if (reportReason.trim()) {
-      onReport(post.id, reportReason);
-      setReportReason("");
-      setShowReportForm(false);
-    }
+  const submitReport = (reason: string) => {
+    onReport(post.id, reason);
+    toast({ title: "Report submitted", description: "Thanks — our moderators will review this shortly." });
   };
 
   const handleAddAnswer = () => {
@@ -331,24 +328,14 @@ const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmar
               className="h-8 px-2 text-xs text-muted-foreground">
               <Share2 className="h-3.5 w-3.5" />
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => setShowReportForm(!showReportForm)}
+            <Button variant="ghost" size="sm" onClick={() => setReportOpen(true)}
               className="h-8 px-2 text-xs text-muted-foreground">
               <Flag className="h-3.5 w-3.5" />
             </Button>
           </div>
         </div>
 
-        {/* Report Form */}
-        {showReportForm && (
-          <div className="space-y-3 p-4 bg-muted/50 rounded-lg">
-            <Textarea placeholder="Please explain why you're reporting this post..." value={reportReason}
-              onChange={(e) => setReportReason(e.target.value)} className="resize-none w-full min-h-20" />
-            <div className="flex gap-2">
-              <Button size="sm" onClick={handleReport}>Submit Report</Button>
-              <Button size="sm" variant="outline" onClick={() => setShowReportForm(false)}>Cancel</Button>
-            </div>
-          </div>
-        )}
+        <ReportDialog open={reportOpen} onOpenChange={setReportOpen} onSubmit={submitReport} target="post" />
 
         {/* Comment Form */}
         {showAnswerForm && (
