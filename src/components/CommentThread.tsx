@@ -51,7 +51,10 @@ const CommentNode = ({ comment, postId, depth = 0, onLike, onReply, canInteract 
     if (file.size > 5 * 1024 * 1024) { toast({ title: "Max 5MB", variant: "destructive" }); return; }
     setUploading(true);
     try {
-      const filePath = `comments/${Math.random()}.${file.name.split('.').pop()}`;
+      const { data: userData } = await supabase.auth.getUser();
+      const uid = userData.user?.id;
+      if (!uid) { toast({ title: "Sign in first", variant: "destructive" }); setUploading(false); return; }
+      const filePath = `${uid}/comments/${crypto.randomUUID()}.${file.name.split('.').pop()}`;
       const { error } = await supabase.storage.from('post-images').upload(filePath, file);
       if (error) throw error;
       const { data: { publicUrl } } = supabase.storage.from('post-images').getPublicUrl(filePath);

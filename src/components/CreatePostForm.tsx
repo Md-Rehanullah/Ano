@@ -99,7 +99,10 @@ const CreatePostForm = ({ onCreatePost, forceOpen = false, onRequestClose }: Cre
     if (file.size > 5 * 1024 * 1024) { toast({ title: "File too large", description: "Max 5MB.", variant: "destructive" }); return; }
     setIsUploading(true);
     try {
-      const filePath = `${Math.random()}.${file.name.split('.').pop()}`;
+      const { data: userData } = await supabase.auth.getUser();
+      const uid = userData.user?.id;
+      if (!uid) { toast({ title: "Sign in first", variant: "destructive" }); setIsUploading(false); return; }
+      const filePath = `${uid}/${crypto.randomUUID()}.${file.name.split('.').pop()}`;
       const { error } = await supabase.storage.from('post-images').upload(filePath, file);
       if (error) throw error;
       const { data: { publicUrl } } = supabase.storage.from('post-images').getPublicUrl(filePath);
@@ -116,7 +119,10 @@ const CreatePostForm = ({ onCreatePost, forceOpen = false, onRequestClose }: Cre
     if (file.size > 50 * 1024 * 1024) { toast({ title: "File too large", description: "Max 50MB.", variant: "destructive" }); return; }
     setIsUploadingVideo(true);
     try {
-      const filePath = `videos/${Math.random()}.${file.name.split('.').pop()}`;
+      const { data: userData } = await supabase.auth.getUser();
+      const uid = userData.user?.id;
+      if (!uid) { toast({ title: "Sign in first", variant: "destructive" }); setIsUploadingVideo(false); return; }
+      const filePath = `${uid}/videos/${crypto.randomUUID()}.${file.name.split('.').pop()}`;
       const { error } = await supabase.storage.from('post-images').upload(filePath, file);
       if (error) throw error;
       const { data: { publicUrl } } = supabase.storage.from('post-images').getPublicUrl(filePath);
