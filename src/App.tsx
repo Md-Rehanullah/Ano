@@ -23,6 +23,7 @@ import PostDetail from "./pages/PostDetail";
 import DeleteAccount from "./pages/DeleteAccount";
 import NotFound from "./pages/NotFound";
 import BannedGate from "./components/BannedGate";
+import AgeGateModal from "./components/AgeGateModal";
 
 const queryClient = new QueryClient();
 
