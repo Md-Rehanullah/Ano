@@ -328,24 +328,14 @@ const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmar
               className="h-8 px-2 text-xs text-muted-foreground">
               <Share2 className="h-3.5 w-3.5" />
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => setShowReportForm(!showReportForm)}
+            <Button variant="ghost" size="sm" onClick={() => setReportOpen(true)}
               className="h-8 px-2 text-xs text-muted-foreground">
               <Flag className="h-3.5 w-3.5" />
             </Button>
           </div>
         </div>
 
-        {/* Report Form */}
-        {showReportForm && (
-          <div className="space-y-3 p-4 bg-muted/50 rounded-lg">
-            <Textarea placeholder="Please explain why you're reporting this post..." value={reportReason}
-              onChange={(e) => setReportReason(e.target.value)} className="resize-none w-full min-h-20" />
-            <div className="flex gap-2">
-              <Button size="sm" onClick={handleReport}>Submit Report</Button>
-              <Button size="sm" variant="outline" onClick={() => setShowReportForm(false)}>Cancel</Button>
-            </div>
-          </div>
-        )}
+        <ReportDialog open={reportOpen} onOpenChange={setReportOpen} onSubmit={submitReport} target="post" />
 
         {/* Comment Form */}
         {showAnswerForm && (
