@@ -13,6 +13,7 @@ import UserAvatar from "@/components/UserAvatar";
 import MediaLightbox from "@/components/MediaLightbox";
 import VideoPlayer from "@/components/VideoPlayer";
 import CommentThread, { buildCommentTree, Comment } from "@/components/CommentThread";
+import ReportDialog from "@/components/ReportDialog";
 import MarkdownContent from "@/components/MarkdownContent";
 import PollBlock from "@/components/PollBlock";
 import { checkProfanity } from "@/lib/profanity";
