@@ -73,7 +73,9 @@ const Auth = () => {
             <span>Continue with Google</span>
           </Button>
           <p className="text-xs text-center text-muted-foreground">
-            By continuing, you agree to our Terms and Privacy Policy.
+            By continuing, you agree to our{" "}
+            <Link to="/terms" className="underline hover:text-foreground">Terms</Link>{" "}and{" "}
+            <Link to="/privacy" className="underline hover:text-foreground">Privacy Policy</Link>.
           </p>
         </CardContent>
       </Card>
