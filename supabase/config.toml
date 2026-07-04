@@ -10,3 +10,6 @@ verify_jwt = false
 
 [functions.admin-list-users]
 verify_jwt = false
+
+[functions.moderate-image]
+verify_jwt = false
