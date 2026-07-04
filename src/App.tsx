@@ -35,6 +35,7 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BannedGate />
+          <AgeGateModal />
           <HashRouter>
             <Routes>
               <Route path="/" element={<Homepage />} />
