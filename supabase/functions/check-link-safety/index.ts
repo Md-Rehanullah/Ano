@@ -92,9 +92,31 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
+    // Require a valid Supabase JWT — prevents anonymous API-key drain.
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    try {
+      const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.45.0');
+      const userClient = createClient(
+        Deno.env.get('SUPABASE_URL')!,
+        Deno.env.get('SUPABASE_ANON_KEY')!,
+        { global: { headers: { Authorization: authHeader } } },
+      );
+      const { data: { user }, error } = await userClient.auth.getUser(authHeader.replace('Bearer ', ''));
+      if (error || !user) throw new Error('unauth');
+    } catch {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const { text } = await req.json();
-    if (typeof text !== 'string') {
-      return new Response(JSON.stringify({ error: 'text is required' }), {
+    if (typeof text !== 'string' || text.length > 20000) {
+      return new Response(JSON.stringify({ error: 'invalid text' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
