@@ -157,12 +157,9 @@ const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmar
     }
   };
 
-  const handleReport = () => {
-    if (reportReason.trim()) {
-      onReport(post.id, reportReason);
-      setReportReason("");
-      setShowReportForm(false);
-    }
+  const submitReport = (reason: string) => {
+    onReport(post.id, reason);
+    toast({ title: "Report submitted", description: "Thanks — our moderators will review this shortly." });
   };
 
   const handleAddAnswer = () => {
