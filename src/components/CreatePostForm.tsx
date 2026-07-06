@@ -92,6 +92,25 @@ const CreatePostForm = ({ onCreatePost, forceOpen = false, onRequestClose }: Cre
     setHasDraft(false);
   };
 
+  const moderateMedia = async (publicUrl: string, filePath: string, kind: "image" | "video") => {
+    const { data, error } = await supabase.functions.invoke("moderate-image", {
+      body: { mediaUrl: publicUrl, kind },
+    });
+    if (error) {
+      // Fail closed: delete the just-uploaded file
+      await supabase.storage.from("post-images").remove([filePath]);
+      toast({ title: "Moderation check failed", description: "Please try again.", variant: "destructive" });
+      return false;
+    }
+    if (!data?.allowed) {
+      await supabase.storage.from("post-images").remove([filePath]);
+      const reason = (data?.reasons ?? []).join(", ") || "unsafe content";
+      toast({ title: "Media blocked", description: `Detected: ${reason}.`, variant: "destructive" });
+      return false;
+    }
+    return true;
+  };
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -106,6 +125,8 @@ const CreatePostForm = ({ onCreatePost, forceOpen = false, onRequestClose }: Cre
       const { error } = await supabase.storage.from('post-images').upload(filePath, file);
       if (error) throw error;
       const { data: { publicUrl } } = supabase.storage.from('post-images').getPublicUrl(filePath);
+      const ok = await moderateMedia(publicUrl, filePath, "image");
+      if (!ok) return;
       update("imageUrl", publicUrl);
       toast({ title: "Image uploaded!" });
     } catch { toast({ title: "Upload failed", variant: "destructive" }); }
@@ -126,11 +147,14 @@ const CreatePostForm = ({ onCreatePost, forceOpen = false, onRequestClose }: Cre
       const { error } = await supabase.storage.from('post-images').upload(filePath, file);
       if (error) throw error;
       const { data: { publicUrl } } = supabase.storage.from('post-images').getPublicUrl(filePath);
+      const ok = await moderateMedia(publicUrl, filePath, "video");
+      if (!ok) return;
       update("videoUrl", publicUrl);
       toast({ title: "Video uploaded!" });
     } catch { toast({ title: "Upload failed", variant: "destructive" }); }
     finally { setIsUploadingVideo(false); }
   };
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
