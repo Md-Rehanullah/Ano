@@ -101,6 +101,9 @@ const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmar
       const { error } = await supabase.storage.from('post-images').upload(filePath, file);
       if (error) throw error;
       const { data: { publicUrl } } = supabase.storage.from('post-images').getPublicUrl(filePath);
+      const { moderateUploadedMedia } = await import("@/lib/mediaModeration");
+      const mod = await moderateUploadedMedia({ bucket: "post-images", filePath, publicUrl, kind: "image" });
+      if (!mod.allowed) { toast({ title: "Image blocked", description: mod.reason, variant: "destructive" }); return; }
       setNewAnswerImage(publicUrl);
     } catch { toast({ title: "Upload failed", variant: "destructive" }); }
     finally { setUploadingAnswerImage(false); }
