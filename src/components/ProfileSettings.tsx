@@ -151,6 +151,13 @@ const ProfileSettings = ({ userId, email, displayName, avatarUrl, bannerUrl, bio
       if (uploadError) throw uploadError;
 
       const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(fileName);
+      const { moderateUploadedMedia } = await import("@/lib/mediaModeration");
+      const mod = await moderateUploadedMedia({ bucket: "avatars", filePath: fileName, publicUrl, kind: "image" });
+      if (!mod.allowed) {
+        setPreviewUrl(avatarUrl);
+        toast({ title: "Avatar blocked", description: mod.reason, variant: "destructive" });
+        return;
+      }
       const urlWithCacheBust = `${publicUrl}?t=${Date.now()}`;
 
       const { error: updateError } = await supabase
@@ -287,6 +294,9 @@ const ProfileSettings = ({ userId, email, displayName, avatarUrl, bannerUrl, bio
       const { error: upErr } = await supabase.storage.from("banners").upload(fileName, file, { upsert: true });
       if (upErr) throw upErr;
       const { data: { publicUrl } } = supabase.storage.from("banners").getPublicUrl(fileName);
+      const { moderateUploadedMedia } = await import("@/lib/mediaModeration");
+      const mod = await moderateUploadedMedia({ bucket: "banners", filePath: fileName, publicUrl, kind: "image" });
+      if (!mod.allowed) { toast({ title: "Banner blocked", description: mod.reason, variant: "destructive" }); return; }
       const url = `${publicUrl}?t=${Date.now()}`;
       await updateBanner(url);
     } catch (err) {
