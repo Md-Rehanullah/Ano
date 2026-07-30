@@ -1,0 +1,28 @@
+{
+  "expo": {
+    "name": "Anonymous Q&A Platform",
+    "slug": "anonymous-insight",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#6366f1"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "app.lovable.4a547dd56e2d482a9fd193145e27d70c"
+    },
+    "android": {
+      "package": "app.lovable.4a547dd56e2d482a9fd193145e27d70c"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./public/favicon.ico"
+    }
+  }
+}
