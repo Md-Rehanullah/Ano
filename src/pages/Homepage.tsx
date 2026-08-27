@@ -36,8 +36,11 @@ const Homepage = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const { toast } = useToast();
   const { user } = useAuth();
+
   const navigate = useNavigate();
   const postIds = posts.map(p => p.id);
   const { interactions, setInteraction } = useUserInteractions(postIds);
