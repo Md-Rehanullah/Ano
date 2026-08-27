@@ -171,6 +171,30 @@ export type Database = {
         }
         Relationships: []
       }
+      feed_impressions: {
+        Row: {
+          id: string
+          last_shown_at: string
+          post_id: string
+          shown_count: number
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          last_shown_at?: string
+          post_id: string
+          shown_count?: number
+          user_id: string
+        }
+        Update: {
+          id?: string
+          last_shown_at?: string
+          post_id?: string
+          shown_count?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       liked_posts: {
         Row: {
           created_at: string
@@ -616,6 +640,33 @@ export type Database = {
         }
         Relationships: []
       }
+      user_interests: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+          weight: number
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+          weight?: number
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+          weight?: number
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -690,7 +741,13 @@ export type Database = {
     }
     Functions: {
       get_personalized_feed: {
-        Args: { p_limit?: number; p_seen_ids: string[]; p_user_id: string }
+        Args: {
+          p_candidate_pool?: number
+          p_limit?: number
+          p_offset?: number
+          p_seed?: string
+          p_user_id?: string
+        }
         Returns: {
           category: string
           created_at: string
@@ -753,6 +810,10 @@ export type Database = {
         Returns: boolean
       }
       is_profile_private: { Args: { _uid: string }; Returns: boolean }
+      record_feed_impressions: {
+        Args: { p_post_ids: string[] }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"

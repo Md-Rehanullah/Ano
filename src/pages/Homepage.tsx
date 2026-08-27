@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import CreatePostForm from "@/components/CreatePostForm";
@@ -12,9 +12,11 @@ import { useUserInteractions } from "@/hooks/useUserInteractions";
 import { supabase } from "@/integrations/supabase/client";
 
 import { saveFeedCache, loadFeedCache, isOnline } from "@/lib/offlineCache";
+import { getFeedSeed, rotateFeedSeed, FEED_PAGE_SIZE } from "@/lib/feedSession";
 import OfflineBanner from "@/components/OfflineBanner";
 import WeeklyLeaderboard from "@/components/WeeklyLeaderboard";
 import type { CreatePostPayload } from "@/components/CreatePostForm";
+
 
 interface Answer {
   id: string; content: string; likes: number; dislikes: number; replies: Answer[];
@@ -34,8 +36,11 @@ const Homepage = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const { toast } = useToast();
   const { user } = useAuth();
+
   const navigate = useNavigate();
   const postIds = posts.map(p => p.id);
   const { interactions, setInteraction } = useUserInteractions(postIds);
@@ -67,11 +72,67 @@ const Homepage = () => {
     if (data) setBookmarkedIds(new Set(data.map(b => b.post_id)));
   };
 
-  const SEEN_KEY = "bridge:seen-post-ids";
-  const getSeen = (): string[] => { try { return JSON.parse(localStorage.getItem(SEEN_KEY) || "[]"); } catch { return []; } };
-  const pushSeen = (ids: string[]) => {
-    const merged = Array.from(new Set([...ids, ...getSeen()])).slice(0, 100);
-    localStorage.setItem(SEEN_KEY, JSON.stringify(merged));
+  // Ranking seed: pinned for the whole browsing session so the order stays stable,
+  // rotated only on an explicit refresh / new app session.
+  const seedRef = useRef<string>(getFeedSeed());
+  const offsetRef = useRef(0);
+
+  const hydratePosts = async (postsArr: any[]): Promise<Post[]> => {
+    const postIdList = postsArr.map(p => p.id);
+    const { data: answersData } = postIdList.length
+      ? await supabase.from('answers').select('*').in('post_id', postIdList)
+      : { data: [] as any[] };
+    const answersByPost: Record<string, any[]> = {};
+    (answersData || []).forEach((a: any) => { (answersByPost[a.post_id] ||= []).push(a); });
+
+    const userIds = [...new Set([
+      ...postsArr.map((p: any) => p.user_id),
+      ...(answersData || []).map((a: any) => a.user_id),
+    ].filter(Boolean))];
+    let profilesMap: Record<string, any> = {};
+    if (userIds.length > 0) {
+      const { data: profiles } = await supabase.from('profiles').select('user_id, display_name, avatar_url').in('user_id', userIds);
+      if (profiles) profilesMap = Object.fromEntries(profiles.map(p => [p.user_id, p]));
+    }
+
+    for (const post of postsArr) {
+      supabase.rpc('increment_post_views', { p_post_id: post.id }).then();
+    }
+
+    return postsArr.map((post: any) => ({
+      id: post.id, title: post.title, description: post.description, category: post.category,
+      likes: post.likes, dislikes: post.dislikes, views: (post.views || 0) + 1,
+      imageUrl: post.image_url, videoUrl: post.video_url, created_at: post.created_at,
+      edited_at: post.edited_at, is_pinned: post.is_pinned,
+      authorName: profilesMap[post.user_id]?.display_name || post.seed_author_name || null,
+      authorAvatar: profilesMap[post.user_id]?.avatar_url || null,
+      authorUserId: post.user_id, isSeed: post.is_seed,
+      answers: (answersByPost[post.id] || []).map((a: any) => ({
+        id: a.id, content: a.content, likes: a.likes, dislikes: a.dislikes, replies: [],
+        created_at: a.created_at, parent_id: a.parent_id ?? null,
+        authorName: profilesMap[a.user_id]?.display_name || a.seed_author_name || null,
+        authorAvatar: profilesMap[a.user_id]?.avatar_url || null,
+        imageUrl: a.image_url ?? null,
+      }))
+    }));
+  };
+
+  const fetchPage = async (offset: number) => {
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    const { data, error } = await supabase.rpc('get_personalized_feed' as any, {
+      p_user_id: authUser?.id ?? null,
+      p_seed: seedRef.current,
+      p_limit: FEED_PAGE_SIZE,
+      p_offset: offset,
+    });
+    if (error) throw error;
+    const rows = (data as any[]) || [];
+    const mapped = await hydratePosts(rows);
+    // Remember what we showed so the ranker can rotate content next session.
+    if (authUser && rows.length) {
+      supabase.rpc('record_feed_impressions' as any, { p_post_ids: rows.map(r => r.id) }).then();
+    }
+    return mapped;
   };
 
   const fetchPosts = async () => {
@@ -83,75 +144,35 @@ const Homepage = () => {
     }
     try {
       setIsLoading(true);
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      const seen = getSeen();
-      let { data, error } = await supabase.rpc('get_personalized_feed' as any, {
-        p_user_id: authUser?.id ?? null,
-        p_seen_ids: seen,
-        p_limit: 40,
-      });
-      // If we exhausted unseen posts, reset and refetch
-      if (!error && (!data || (data as any[]).length === 0) && seen.length > 0) {
-        localStorage.removeItem(SEEN_KEY);
-        const retry = await supabase.rpc('get_personalized_feed' as any, {
-          p_user_id: authUser?.id ?? null, p_seen_ids: [], p_limit: 40,
-        });
-        data = retry.data; error = retry.error;
-      }
-      if (error || !data) {
-        const cached = loadFeedCache();
-        if (cached) { setPosts(cached.posts as any); toast({ title: "Showing cached posts", description: "Couldn't reach the server." }); }
-        else toast({ title: "Error", description: "Failed to load posts.", variant: "destructive" });
-        return;
-      }
-      const postsArr = data as any[];
-      const postIdList = postsArr.map(p => p.id);
-      const { data: answersData } = postIdList.length
-        ? await supabase.from('answers').select('*').in('post_id', postIdList)
-        : { data: [] as any[] };
-      const answersByPost: Record<string, any[]> = {};
-      (answersData || []).forEach((a: any) => { (answersByPost[a.post_id] ||= []).push(a); });
-
-      const userIds = [...new Set([
-        ...postsArr.map((p: any) => p.user_id),
-        ...(answersData || []).map((a: any) => a.user_id),
-      ].filter(Boolean))];
-      let profilesMap: Record<string, any> = {};
-      if (userIds.length > 0) {
-        const { data: profiles } = await supabase.from('profiles').select('user_id, display_name, avatar_url').in('user_id', userIds);
-        if (profiles) profilesMap = Object.fromEntries(profiles.map(p => [p.user_id, p]));
-      }
-
-      for (const post of postsArr) {
-        supabase.rpc('increment_post_views', { p_post_id: post.id }).then();
-      }
-
-      const mapped: Post[] = postsArr.map((post: any) => ({
-        id: post.id, title: post.title, description: post.description, category: post.category,
-        likes: post.likes, dislikes: post.dislikes, views: (post.views || 0) + 1,
-        imageUrl: post.image_url, videoUrl: post.video_url, created_at: post.created_at,
-        edited_at: post.edited_at, is_pinned: post.is_pinned,
-        authorName: profilesMap[post.user_id]?.display_name || post.seed_author_name || null,
-        authorAvatar: profilesMap[post.user_id]?.avatar_url || null,
-        authorUserId: post.user_id, isSeed: post.is_seed,
-        answers: (answersByPost[post.id] || []).map((a: any) => ({
-          id: a.id, content: a.content, likes: a.likes, dislikes: a.dislikes, replies: [],
-          created_at: a.created_at, parent_id: a.parent_id ?? null,
-          authorName: profilesMap[a.user_id]?.display_name || a.seed_author_name || null,
-          authorAvatar: profilesMap[a.user_id]?.avatar_url || null,
-          imageUrl: a.image_url ?? null,
-        }))
-      }));
+      const mapped = await fetchPage(0);
+      offsetRef.current = mapped.length;
+      setHasMore(mapped.length === FEED_PAGE_SIZE);
       setPosts(mapped);
-      pushSeen(postIdList);
       saveFeedCache(mapped as any);
     } catch {
       const cached = loadFeedCache();
-      if (cached) setPosts(cached.posts as any);
+      if (cached) { setPosts(cached.posts as any); toast({ title: "Showing cached posts", description: "Couldn't reach the server." }); }
       else toast({ title: "Error", description: "Failed to load posts.", variant: "destructive" });
     }
     finally { setIsLoading(false); }
   };
+
+  const loadMore = useCallback(async () => {
+    if (isLoadingMore || !hasMore || !isOnline()) return;
+    setIsLoadingMore(true);
+    try {
+      const mapped = await fetchPage(offsetRef.current);
+      offsetRef.current += mapped.length;
+      setPosts(prev => {
+        const existing = new Set(prev.map(p => p.id));
+        return [...prev, ...mapped.filter(p => !existing.has(p.id))];
+      });
+      setHasMore(mapped.length === FEED_PAGE_SIZE);
+    } catch {
+      setHasMore(false);
+    } finally { setIsLoadingMore(false); }
+  }, [isLoadingMore, hasMore]);
+
 
   const handleCreatePost = async (newPostData: CreatePostPayload) => {
     if (!user) { navigate('/auth'); return; }
