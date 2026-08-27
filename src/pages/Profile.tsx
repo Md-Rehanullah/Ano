@@ -6,6 +6,8 @@ import PostCardSkeleton from "@/components/PostCardSkeleton";
 import EditPostDialog from "@/components/EditPostDialog";
 import DeletePostDialog from "@/components/DeletePostDialog";
 import ProfileSettings from "@/components/ProfileSettings";
+import InterestsPicker from "@/components/InterestsPicker";
+
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
