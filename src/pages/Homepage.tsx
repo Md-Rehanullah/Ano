@@ -12,9 +12,11 @@ import { useUserInteractions } from "@/hooks/useUserInteractions";
 import { supabase } from "@/integrations/supabase/client";
 
 import { saveFeedCache, loadFeedCache, isOnline } from "@/lib/offlineCache";
+import { getFeedSeed, rotateFeedSeed, FEED_PAGE_SIZE } from "@/lib/feedSession";
 import OfflineBanner from "@/components/OfflineBanner";
 import WeeklyLeaderboard from "@/components/WeeklyLeaderboard";
 import type { CreatePostPayload } from "@/components/CreatePostForm";
+
 
 interface Answer {
   id: string; content: string; likes: number; dislikes: number; replies: Answer[];
