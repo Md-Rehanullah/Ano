@@ -441,7 +441,8 @@ const Profile = () => {
             </div>
           </TabsContent>
 
-          <TabsContent value="settings">
+          <TabsContent value="settings" className="space-y-6">
+            <InterestsPicker />
             <ProfileSettings
               userId={user.id}
               email={user.email}
@@ -456,6 +457,7 @@ const Profile = () => {
               onUpdate={fetchUserData}
             />
           </TabsContent>
+
         </Tabs>
 
         <EditPostDialog
