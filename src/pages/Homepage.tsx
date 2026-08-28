@@ -6,6 +6,8 @@ import PostCard from "@/components/PostCard";
 import PostCardSkeleton from "@/components/PostCardSkeleton";
 import FirstTimeGuide from "@/components/FirstTimeGuide";
 import PullToRefresh from "@/components/PullToRefresh";
+import { Button } from "@/components/ui/button";
+
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserInteractions } from "@/hooks/useUserInteractions";
