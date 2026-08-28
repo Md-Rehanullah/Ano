@@ -256,8 +256,12 @@ const Homepage = () => {
   };
 
   const handleRefresh = useCallback(async () => {
+    // New feed session -> new ranking variation from the same post pool.
+    seedRef.current = rotateFeedSeed();
+    offsetRef.current = 0;
     await Promise.all([fetchPosts(), user ? fetchBookmarks() : Promise.resolve()]);
   }, [user]);
+
 
   return (
     <Layout>
