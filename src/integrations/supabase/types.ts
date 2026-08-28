@@ -442,9 +442,12 @@ export type Database = {
       }
       profiles: {
         Row: {
+          age: number | null
           avatar_url: string | null
           banner_url: string | null
           bio: string | null
+          college: string | null
+          course: string | null
           created_at: string
           display_name: string | null
           facebook_url: string | null
@@ -452,14 +455,20 @@ export type Database = {
           instagram_url: string | null
           is_private: boolean
           location: string | null
+          onboarding_completed: boolean
+          registration_completed: boolean
+          skills: string | null
           updated_at: string
           user_id: string
           x_url: string | null
         }
         Insert: {
+          age?: number | null
           avatar_url?: string | null
           banner_url?: string | null
           bio?: string | null
+          college?: string | null
+          course?: string | null
           created_at?: string
           display_name?: string | null
           facebook_url?: string | null
@@ -467,14 +476,20 @@ export type Database = {
           instagram_url?: string | null
           is_private?: boolean
           location?: string | null
+          onboarding_completed?: boolean
+          registration_completed?: boolean
+          skills?: string | null
           updated_at?: string
           user_id: string
           x_url?: string | null
         }
         Update: {
+          age?: number | null
           avatar_url?: string | null
           banner_url?: string | null
           bio?: string | null
+          college?: string | null
+          course?: string | null
           created_at?: string
           display_name?: string | null
           facebook_url?: string | null
@@ -482,6 +497,9 @@ export type Database = {
           instagram_url?: string | null
           is_private?: boolean
           location?: string | null
+          onboarding_completed?: boolean
+          registration_completed?: boolean
+          skills?: string | null
           updated_at?: string
           user_id?: string
           x_url?: string | null
@@ -525,6 +543,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      underage_registrations: {
+        Row: {
+          age: number | null
+          created_at: string
+          email: string | null
+          id: string
+          provider: string | null
+          status: string
+          user_id: string | null
+        }
+        Insert: {
+          age?: number | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          provider?: string | null
+          status?: string
+          user_id?: string | null
+        }
+        Update: {
+          age?: number | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          provider?: string | null
+          status?: string
+          user_id?: string | null
+        }
+        Relationships: []
       }
       user_badges: {
         Row: {
@@ -740,6 +788,20 @@ export type Database = {
       }
     }
     Functions: {
+      complete_onboarding: { Args: never; Returns: undefined }
+      complete_registration: {
+        Args: {
+          p_age: number
+          p_avatar_url?: string
+          p_bio?: string
+          p_college?: string
+          p_course?: string
+          p_display_name: string
+          p_location?: string
+          p_skills?: string
+        }
+        Returns: string
+      }
       get_personalized_feed: {
         Args: {
           p_candidate_pool?: number
@@ -785,6 +847,7 @@ export type Database = {
         Args: { p_profile_user_id: string }
         Returns: string
       }
+      get_registration_state: { Args: never; Returns: string }
       get_user_interaction: { Args: { post_id: string }; Returns: string }
       has_role: {
         Args: {
