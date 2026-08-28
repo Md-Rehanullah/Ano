@@ -6,6 +6,8 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { X, Loader2 } from "lucide-react";
+import { isNativeApp, isNativeGoogleConfigured, nativeGoogleSignIn } from "@/lib/nativeGoogleAuth";
+
 
 const GoogleIcon = () => (
   <svg className="h-5 w-5" viewBox="0 0 48 48" aria-hidden="true">
@@ -34,11 +36,26 @@ const Auth = () => {
 
   const handleGoogle = async () => {
     setLoading(true);
-    // On Capacitor the origin is capacitor://localhost, which Google rejects.
-    // Use the published web URL so OAuth always lands on a real https origin.
-    const isNative = !!(window as any).Capacitor?.isNativePlatform?.();
+    const native = isNativeApp();
+
+    // Android / iOS: use the native Google account picker and exchange the
+    // returned ID token with Supabase, so the user stays inside the app.
+    if (native && isNativeGoogleConfigured()) {
+      try {
+        await nativeGoogleSignIn();
+        return; // onAuthStateChange navigates to "/"
+      } catch (e: any) {
+        const msg = String(e?.message || e);
+        if (/cancel/i.test(msg)) { setLoading(false); return; }
+        toast({ title: "Google sign-in failed", description: msg, variant: "destructive" });
+        setLoading(false);
+        return;
+      }
+    }
+
+    // Web (and native fallback if the native client isn't configured yet).
     const webOrigin = "https://bridge99.lovable.app";
-    const redirectTo = isNative ? `${webOrigin}/` : `${window.location.origin}/`;
+    const redirectTo = native ? `${webOrigin}/` : `${window.location.origin}/`;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo },
@@ -48,6 +65,7 @@ const Auth = () => {
       setLoading(false);
     }
   };
+
 
   if (user) return null;
 
