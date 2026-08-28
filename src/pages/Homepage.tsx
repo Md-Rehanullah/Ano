@@ -6,6 +6,8 @@ import PostCard from "@/components/PostCard";
 import PostCardSkeleton from "@/components/PostCardSkeleton";
 import FirstTimeGuide from "@/components/FirstTimeGuide";
 import PullToRefresh from "@/components/PullToRefresh";
+import { Button } from "@/components/ui/button";
+
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserInteractions } from "@/hooks/useUserInteractions";
@@ -256,8 +258,12 @@ const Homepage = () => {
   };
 
   const handleRefresh = useCallback(async () => {
+    // New feed session -> new ranking variation from the same post pool.
+    seedRef.current = rotateFeedSeed();
+    offsetRef.current = 0;
     await Promise.all([fetchPosts(), user ? fetchBookmarks() : Promise.resolve()]);
   }, [user]);
+
 
   return (
     <Layout>
@@ -271,7 +277,7 @@ const Homepage = () => {
           <div className="space-y-6">{[...Array(3)].map((_, i) => <PostCardSkeleton key={i} />)}</div>
         ) : posts.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
-            <p className="text-lg">No posts in the last 10 days. Be the first to share something!</p>
+            <p className="text-lg">No posts yet. Be the first to share something!</p>
           </div>
         ) : (
           <div className="space-y-6">
@@ -281,6 +287,15 @@ const Homepage = () => {
                 userInteraction={interactions[post.id] || null} isBookmarked={bookmarkedIds.has(post.id)}
                 canInteract={isOnline()} />
             ))}
+            <div className="flex justify-center pt-2">
+              {hasMore ? (
+                <Button variant="outline" onClick={loadMore} disabled={isLoadingMore}>
+                  {isLoadingMore ? "Loading..." : "Load more posts"}
+                </Button>
+              ) : (
+                <p className="text-xs text-muted-foreground">You're all caught up.</p>
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -288,5 +303,6 @@ const Homepage = () => {
     </Layout>
   );
 };
+
 
 export default Homepage;
