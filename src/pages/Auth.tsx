@@ -6,6 +6,8 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { X, Loader2 } from "lucide-react";
+import { isNativeApp, isNativeGoogleConfigured, nativeGoogleSignIn } from "@/lib/nativeGoogleAuth";
+
 
 const GoogleIcon = () => (
   <svg className="h-5 w-5" viewBox="0 0 48 48" aria-hidden="true">
