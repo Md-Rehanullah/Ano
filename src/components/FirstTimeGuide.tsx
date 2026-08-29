@@ -23,8 +23,12 @@ const FirstTimeGuide = () => {
   useEffect(() => {
     if (!user) return;
     const checkGuide = async () => {
-      const { data } = await supabase.from('user_guide_seen').select('id').eq('user_id', user.id).maybeSingle();
-      if (!data) setOpen(true);
+      const { data } = await supabase
+        .from('profiles')
+        .select('onboarding_completed, registration_completed')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (data?.registration_completed && !data.onboarding_completed) setOpen(true);
     };
     checkGuide();
   }, [user]);
@@ -32,7 +36,7 @@ const FirstTimeGuide = () => {
   const handleClose = async () => {
     setOpen(false);
     if (user) {
-      await supabase.from('user_guide_seen').insert({ user_id: user.id });
+      await supabase.rpc('complete_onboarding' as any);
     }
   };
 

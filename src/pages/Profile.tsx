@@ -184,12 +184,12 @@ const Profile = () => {
     }
   };
 
-  const handleEditPost = async (postId: string, data: { title: string; description: string; category: string }) => {
+  const handleEditPost = async (postId: string, data: { description: string; category: string }) => {
     if (!user) return;
     try {
       const { error } = await supabase
         .from('posts')
-        .update({ title: data.title, description: data.description, category: data.category })
+        .update({ description: data.description, category: data.category })
         .eq('id', postId).eq('user_id', user.id);
       if (error) throw error;
       await fetchUserData();

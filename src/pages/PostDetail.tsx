@@ -89,10 +89,11 @@ const PostDetail = () => {
     if (error) toast({ title: "Error", variant: "destructive" });
     else toast({ title: "Report submitted" });
   };
-  const handleAddAnswer = async (postId: string, content: string, parentId?: string | null) => {
+  const handleAddAnswer = async (postId: string, content: string, parentId?: string | null, imageUrl?: string | null) => {
     if (!user) { navigate('/auth'); return; }
     const payload: any = { post_id: postId, user_id: user.id, content };
     if (parentId) payload.parent_id = parentId;
+    if (imageUrl) payload.image_url = imageUrl;
     await supabase.from('answers').insert(payload);
     await fetchPost();
     toast({ title: parentId ? "Reply posted!" : "Comment posted!" });
