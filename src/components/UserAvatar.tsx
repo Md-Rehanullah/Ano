@@ -17,9 +17,11 @@ const getInitials = (name?: string | null) => {
 
 const UserAvatar = ({ src, name, className, fallbackClassName }: UserAvatarProps) => {
   const initials = getInitials(name);
+  const resolvedSrc = src || getSeedAvatar(name) || undefined;
   return (
     <Avatar className={cn("ring-2 ring-primary/20", className)}>
-      <AvatarImage src={src || undefined} alt={name || "User"} />
+      <AvatarImage src={resolvedSrc} alt={name || "User"} />
+
       <AvatarFallback className={cn("bg-gradient-to-br from-primary to-primary/60 text-primary-foreground font-semibold", fallbackClassName)}>
         {initials || <User className="h-1/2 w-1/2" />}
       </AvatarFallback>
