@@ -1,6 +1,8 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { User } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getSeedAvatar } from "@/lib/seedAvatars";
+
 
 interface UserAvatarProps {
   src?: string | null;
