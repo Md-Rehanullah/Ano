@@ -22,8 +22,8 @@ import { Clock, AlertCircle, Loader2 } from "lucide-react";
 
 interface Post {
   id: string;
-  title: string;
-  description: string;
+  title?: string | null;
+  description?: string | null;
   category: string;
   created_at?: string;
 }
@@ -32,7 +32,7 @@ interface EditPostDialogProps {
   post: Post | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSave: (postId: string, data: { title: string; description: string; category: string }) => Promise<void>;
+  onSave: (postId: string, data: { description: string; category: string }) => Promise<void>;
 }
 
 const categories = ["General", "Technology", "Education", "Lifestyle", "Other"];
@@ -47,7 +47,6 @@ const formatRemaining = (ms: number) => {
 };
 
 const EditPostDialog = ({ post, open, onOpenChange, onSave }: EditPostDialogProps) => {
-  const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("General");
   const [isSaving, setIsSaving] = useState(false);
@@ -55,8 +54,7 @@ const EditPostDialog = ({ post, open, onOpenChange, onSave }: EditPostDialogProp
 
   useEffect(() => {
     if (post) {
-      setTitle(post.title);
-      setDescription(post.description);
+      setDescription(post.description ?? "");
       setCategory(post.category || "General");
     }
   }, [post]);
@@ -74,11 +72,11 @@ const EditPostDialog = ({ post, open, onOpenChange, onSave }: EditPostDialogProp
   const expired = remainingMs !== null && remainingMs <= 0;
 
   const handleSave = async () => {
-    if (!post || !title.trim() || !description.trim() || !category) return;
+    if (!post || !description.trim() || !category) return;
     if (expired) return;
     setIsSaving(true);
     try {
-      await onSave(post.id, { title: title.trim(), description: description.trim(), category });
+      await onSave(post.id, { description: description.trim(), category });
       onOpenChange(false);
     } finally {
       setIsSaving(false);
@@ -112,18 +110,6 @@ const EditPostDialog = ({ post, open, onOpenChange, onSave }: EditPostDialogProp
         )}
 
         <div className="space-y-4 py-2">
-          <div className="space-y-2">
-            <Label htmlFor="title">Title</Label>
-            <Input
-              id="title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Enter post title"
-              maxLength={200}
-              disabled={expired}
-            />
-          </div>
-
           <div className="space-y-2">
             <Label htmlFor="description">Description</Label>
             <Textarea
@@ -161,7 +147,7 @@ const EditPostDialog = ({ post, open, onOpenChange, onSave }: EditPostDialogProp
           </Button>
           <Button
             onClick={handleSave}
-            disabled={isSaving || expired || !title.trim() || !description.trim() || !category}
+            disabled={isSaving || expired || !description.trim() || !category}
           >
             {isSaving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving...</> : "Save Changes"}
           </Button>
