@@ -37,7 +37,7 @@ export const nativeGoogleSignIn = async (): Promise<void> => {
 
   const res: any = await SocialLogin.login({
     provider: "google",
-    options: { scopes: ["email", "profile"] },
+    options: {},
   });
 
   const idToken: string | undefined =
