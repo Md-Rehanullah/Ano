@@ -301,14 +301,12 @@ const Homepage = () => {
                 userInteraction={interactions[post.id] || null} isBookmarked={bookmarkedIds.has(post.id)}
                 canInteract={isOnline()} />
             ))}
-            <div className="flex justify-center pt-2">
-              {hasMore ? (
-                <Button variant="outline" onClick={loadMore} disabled={isLoadingMore}>
-                  {isLoadingMore ? "Loading..." : "Load more posts"}
-                </Button>
-              ) : (
+            <div ref={observerTarget} className="flex justify-center py-8">
+              {isLoadingMore ? (
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              ) : !hasMore && posts.length > 0 ? (
                 <p className="text-xs text-muted-foreground">You're all caught up.</p>
-              )}
+              ) : null}
             </div>
           </div>
         )}
