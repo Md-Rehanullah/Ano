@@ -4,12 +4,13 @@ import { supabase } from "@/integrations/supabase/client";
  * Google Web Client ID (OAuth 2.0 "Web application" client from Google Cloud).
  * This is a PUBLIC identifier — safe to keep in the codebase.
  *
- * Replace the placeholder with the same Web Client ID that is configured in
- * Supabase → Authentication → Providers → Google.
+ * This must match the same Web Client ID configured in:
+ * - Google Cloud Console
+ * - Supabase → Authentication → Providers → Google
  */
 export const GOOGLE_WEB_CLIENT_ID =
   (import.meta as any).env?.VITE_GOOGLE_WEB_CLIENT_ID ||
-  "REPLACE_WITH_GOOGLE_WEB_CLIENT_ID.apps.googleusercontent.com";
+  "215215976680-7m05d3s22lir40iti4kg6gn436tcvdlv.apps.googleusercontent.com";
 
 export const isNativeApp = (): boolean =>
   !!(window as any).Capacitor?.isNativePlatform?.();
