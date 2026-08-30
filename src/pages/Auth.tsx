@@ -40,10 +40,19 @@ const Auth = () => {
     try {
       if (native) {
         if (!isNativeGoogleConfigured()) {
-          throw new Error("Native Google sign-in is not configured.");
+          throw new Error("Native Google sign-in is not configured. Set VITE_GOOGLE_WEB_CLIENT_ID.");
         }
-        await nativeGoogleSignIn();
-        return;
+        try {
+          await nativeGoogleSignIn();
+          return;
+        } catch (nativeErr) {
+          const { error: fallbackError } = await supabase.auth.signInWithOAuth({
+            provider: "google",
+            options: { redirectTo: window.location.origin },
+          });
+          if (fallbackError) throw nativeErr;
+          return;
+        }
       }
 
       const { error } = await supabase.auth.signInWithOAuth({
@@ -54,6 +63,7 @@ const Auth = () => {
     } catch (e: any) {
       const msg = String(e?.message || e || "Google sign-in failed.");
       toast({ title: "Google sign-in failed", description: msg, variant: "destructive" });
+    } finally {
       setLoading(false);
     }
   };
