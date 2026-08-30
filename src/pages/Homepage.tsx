@@ -6,7 +6,7 @@ import PostCard from "@/components/PostCard";
 import PostCardSkeleton from "@/components/PostCardSkeleton";
 import FirstTimeGuide from "@/components/FirstTimeGuide";
 import PullToRefresh from "@/components/PullToRefresh";
-import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -78,6 +78,7 @@ const Homepage = () => {
   // rotated only on an explicit refresh / new app session.
   const seedRef = useRef<string>(getFeedSeed());
   const offsetRef = useRef(0);
+  const observerTarget = useRef<HTMLDivElement>(null);
 
   const hydratePosts = async (postsArr: any[]): Promise<Post[]> => {
     const postIdList = postsArr.map(p => p.id);
@@ -173,6 +174,18 @@ const Homepage = () => {
     } catch {
       setHasMore(false);
     } finally { setIsLoadingMore(false); }
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !isLoadingMore && !isLoading) {
+          loadMore();
+        }
+      },
+      { threshold: 0.1 }
+    );
+    if (observerTarget.current) observer.observe(observerTarget.current);
+    return () => observer.disconnect();
+  }, [loadMore, hasMore, isLoadingMore, isLoading]);
   }, [isLoadingMore, hasMore]);
 
 
@@ -287,14 +300,12 @@ const Homepage = () => {
                 userInteraction={interactions[post.id] || null} isBookmarked={bookmarkedIds.has(post.id)}
                 canInteract={isOnline()} />
             ))}
-            <div className="flex justify-center pt-2">
-              {hasMore ? (
-                <Button variant="outline" onClick={loadMore} disabled={isLoadingMore}>
-                  {isLoadingMore ? "Loading..." : "Load more posts"}
-                </Button>
-              ) : (
+            <div ref={observerTarget} className="flex justify-center py-8">
+              {isLoadingMore ? (
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              ) : !hasMore && posts.length > 0 ? (
                 <p className="text-xs text-muted-foreground">You're all caught up.</p>
-              )}
+              ) : null}
             </div>
           </div>
         )}
