@@ -6,6 +6,7 @@ import PostCard from "@/components/PostCard";
 import PostCardSkeleton from "@/components/PostCardSkeleton";
 import FirstTimeGuide from "@/components/FirstTimeGuide";
 import PullToRefresh from "@/components/PullToRefresh";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 import { useToast } from "@/hooks/use-toast";
@@ -78,6 +79,7 @@ const Homepage = () => {
   // rotated only on an explicit refresh / new app session.
   const seedRef = useRef<string>(getFeedSeed());
   const offsetRef = useRef(0);
+  const observerTarget = useRef<HTMLDivElement>(null);
 
   const hydratePosts = async (postsArr: any[]): Promise<Post[]> => {
     const postIdList = postsArr.map(p => p.id);
@@ -173,6 +175,18 @@ const Homepage = () => {
     } catch {
       setHasMore(false);
     } finally { setIsLoadingMore(false); }
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !isLoadingMore && !isLoading) {
+          loadMore();
+        }
+      },
+      { threshold: 0.1 }
+    );
+    if (observerTarget.current) observer.observe(observerTarget.current);
+    return () => observer.disconnect();
+  }, [loadMore, hasMore, isLoadingMore, isLoading]);
   }, [isLoadingMore, hasMore]);
 
 
