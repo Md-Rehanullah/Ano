@@ -9,14 +9,14 @@ import { supabase } from "@/integrations/supabase/client";
  * - Supabase → Authentication → Providers → Google
  */
 export const GOOGLE_WEB_CLIENT_ID =
-  (import.meta as any).env?.VITE_GOOGLE_WEB_CLIENT_ID ||
-  "215215976680-7m05d3s22lir40iti4kg6gn436tcvdlv.apps.googleusercontent.com";
+  String((import.meta as any).env?.VITE_GOOGLE_WEB_CLIENT_ID || "").trim();
 
 export const isNativeApp = (): boolean =>
   !!(window as any).Capacitor?.isNativePlatform?.();
 
 export const isNativeGoogleConfigured = () =>
-  GOOGLE_WEB_CLIENT_ID.startsWith("REPLACE_WITH") === false;
+  GOOGLE_WEB_CLIENT_ID.length > 0 &&
+  GOOGLE_WEB_CLIENT_ID.endsWith(".apps.googleusercontent.com");
 
 /**
  * Native Android/iOS Google sign-in.
@@ -25,6 +25,10 @@ export const isNativeGoogleConfigured = () =>
  * inside the app.
  */
 export const nativeGoogleSignIn = async (): Promise<void> => {
+  if (!isNativeGoogleConfigured()) {
+    throw new Error("Missing valid VITE_GOOGLE_WEB_CLIENT_ID for native Google sign-in.");
+  }
+
   const { SocialLogin } = await import("@capgo/capacitor-social-login");
 
   await SocialLogin.initialize({

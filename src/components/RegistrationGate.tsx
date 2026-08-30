@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 
-type State = "loading" | "anonymous" | "new" | "blocked" | "ok";
+type State = "loading" | "anonymous" | "new" | "blocked" | "onboarding" | "existing" | "error";
 
 /**
  * Runs once per signed-in session:
@@ -36,7 +36,7 @@ const RegistrationGate = () => {
     (async () => {
       const { data, error } = await supabase.rpc("get_registration_state" as any);
       if (cancelled) return;
-      if (error) { setState("ok"); return; }
+      if (error) { setState("error"); return; }
       const s = String(data);
       if (s === "new") {
         setName(
@@ -46,8 +46,12 @@ const RegistrationGate = () => {
         setState("new");
       } else if (s === "blocked") {
         setState("blocked");
+      } else if (s === "onboarding") {
+        setState("onboarding");
+      } else if (s === "existing") {
+        setState("existing");
       } else {
-        setState("ok");
+        setState("error");
       }
     })();
     return () => { cancelled = true; };
@@ -76,9 +80,11 @@ const RegistrationGate = () => {
         p_location: null,
       });
       if (error) throw error;
-      if (String(data) === "blocked") { setState("blocked"); return; }
-      setState("ok");
-      toast({ title: "Welcome to Bridge!" });
+      const result = String(data);
+      if (result === "blocked") { setState("blocked"); return; }
+      if (result === "ok") { setState("existing"); toast({ title: "Welcome to Bridge!" }); return; }
+      setState("error");
+      toast({ title: "Unexpected registration response", variant: "destructive" });
     } catch (e: any) {
       toast({ title: "Couldn't complete registration", description: e?.message, variant: "destructive" });
     } finally {
@@ -88,7 +94,7 @@ const RegistrationGate = () => {
 
   const signOut = async () => { try { await supabase.auth.signOut(); } catch { /* ignore */ } };
 
-  if (!user || state === "loading" || state === "anonymous" || state === "ok") return null;
+  if (!user || state === "loading" || state === "anonymous" || state === "existing") return null;
 
   if (state === "blocked") {
     return (
@@ -104,6 +110,26 @@ const RegistrationGate = () => {
           <p className="text-sm text-muted-foreground">
             If you believe this is a mistake, contact atlasthoughthelp@gmail.com.
           </p>
+          <Button onClick={signOut} className="w-full">Sign out</Button>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  if (state === "onboarding") {
+    return null;
+  }
+
+  if (state === "error") {
+    return (
+      <Dialog open onOpenChange={() => { /* forced */ }}>
+        <DialogContent className="max-w-md" onInteractOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
+          <DialogHeader>
+            <DialogTitle>We couldn't verify your account setup</DialogTitle>
+            <DialogDescription>
+              Please try signing out and signing in again. If this keeps happening, contact atlasthoughthelp@gmail.com.
+            </DialogDescription>
+          </DialogHeader>
           <Button onClick={signOut} className="w-full">Sign out</Button>
         </DialogContent>
       </Dialog>

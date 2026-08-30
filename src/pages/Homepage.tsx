@@ -174,6 +174,8 @@ const Homepage = () => {
     } catch {
       setHasMore(false);
     } finally { setIsLoadingMore(false); }
+  }, [isLoadingMore, hasMore]);
+
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -186,7 +188,6 @@ const Homepage = () => {
     if (observerTarget.current) observer.observe(observerTarget.current);
     return () => observer.disconnect();
   }, [loadMore, hasMore, isLoadingMore, isLoading]);
-  }, [isLoadingMore, hasMore]);
 
 
   const handleCreatePost = async (newPostData: CreatePostPayload) => {
