@@ -7,7 +7,6 @@ import PostCardSkeleton from "@/components/PostCardSkeleton";
 import FirstTimeGuide from "@/components/FirstTimeGuide";
 import PullToRefresh from "@/components/PullToRefresh";
 import { Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
