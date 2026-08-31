@@ -387,6 +387,8 @@ export type Database = {
           description: string | null
           dislikes: number
           edited_at: string | null
+          file_name: string | null
+          file_url: string | null
           id: string
           image_url: string | null
           is_hidden: boolean
@@ -406,6 +408,8 @@ export type Database = {
           description?: string | null
           dislikes?: number
           edited_at?: string | null
+          file_name?: string | null
+          file_url?: string | null
           id?: string
           image_url?: string | null
           is_hidden?: boolean
@@ -425,6 +429,8 @@ export type Database = {
           description?: string | null
           dislikes?: number
           edited_at?: string | null
+          file_name?: string | null
+          file_url?: string | null
           id?: string
           image_url?: string | null
           is_hidden?: boolean
@@ -816,6 +822,8 @@ export type Database = {
           description: string | null
           dislikes: number
           edited_at: string | null
+          file_name: string | null
+          file_url: string | null
           id: string
           image_url: string | null
           is_hidden: boolean

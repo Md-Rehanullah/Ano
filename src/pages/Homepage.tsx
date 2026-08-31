@@ -30,7 +30,7 @@ interface Post {
   id: string; title: string; description: string; category: string;
   likes: number; dislikes: number; views: number; answers: Answer[];
   created_at: string; edited_at?: string | null; is_pinned?: boolean;
-  imageUrl?: string; videoUrl?: string;
+  imageUrl?: string; videoUrl?: string; fileUrl?: string | null; fileName?: string | null;
   authorName?: string; authorAvatar?: string;
   authorUserId?: string | null; isSeed?: boolean;
 }
@@ -119,7 +119,9 @@ const Homepage = () => {
     return postsArr.map((post: any) => ({
       id: post.id, title: post.title, description: post.description, category: post.category,
       likes: post.likes, dislikes: post.dislikes, views: (post.views || 0) + 1,
-      imageUrl: post.image_url, videoUrl: post.video_url, created_at: post.created_at,
+      imageUrl: post.image_url, videoUrl: post.video_url,
+      fileUrl: post.file_url ?? null, fileName: post.file_name ?? null,
+      created_at: post.created_at,
       edited_at: post.edited_at, is_pinned: post.is_pinned,
       authorName: profilesMap[post.user_id]?.display_name || post.seed_author_name || null,
       authorAvatar: profilesMap[post.user_id]?.avatar_url || null,
@@ -272,6 +274,34 @@ const Homepage = () => {
   }, [user]);
 
 
+  // Swipe left/right anywhere on the feed to move between tabs.
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
+  const onTouchStart = (e: React.TouchEvent) => {
+    const t = e.touches[0];
+    touchStart.current = { x: t.clientX, y: t.clientY };
+  };
+  const onTouchEnd = (e: React.TouchEvent) => {
+    const start = touchStart.current;
+    touchStart.current = null;
+    if (!start) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - start.x;
+    const dy = t.clientY - start.y;
+    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    const idx = FEED_TABS.findIndex(ft => ft.key === tab);
+    const next = dx < 0 ? idx + 1 : idx - 1;
+    if (next < 0 || next >= FEED_TABS.length) return;
+    setTab(FEED_TABS[next].key);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  // Keep the active chip visible in the horizontal strip.
+  const tabStripRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = tabStripRef.current?.querySelector(`[data-tab="${tab}"]`) as HTMLElement | null;
+    el?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+  }, [tab]);
+
   const q = searchQuery.trim().toLowerCase();
   const visiblePosts = q
     ? posts.filter(p =>
@@ -285,13 +315,14 @@ const Homepage = () => {
     <Layout>
       <OfflineBanner />
       <PullToRefresh onRefresh={handleRefresh} />
-      <div className="container mx-auto px-4 py-6 max-w-4xl">
+      <div className="container mx-auto px-4 py-6 max-w-4xl" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
         <div className="flex items-center gap-2 mb-4">
-          <div className="flex-1 overflow-x-auto no-scrollbar">
+          <div ref={tabStripRef} className="flex-1 overflow-x-auto no-scrollbar">
             <div className="flex items-center gap-1 w-max">
               {FEED_TABS.map(t => (
                 <button
                   key={t.key}
+                  data-tab={t.key}
                   onClick={() => setTab(t.key)}
                   className={cn(
                     "whitespace-nowrap px-3 py-1.5 text-sm font-medium rounded-full transition-colors border",
@@ -305,15 +336,6 @@ const Homepage = () => {
               ))}
             </div>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-9 w-9 shrink-0 rounded-full p-0"
-            aria-label={searchOpen ? "Close search" : "Search posts"}
-            onClick={() => { setSearchOpen(o => !o); if (searchOpen) setSearchQuery(""); }}
-          >
-            {searchOpen ? <X className="h-4 w-4" /> : <Search className="h-4 w-4" />}
-          </Button>
         </div>
         {searchOpen && (
           <Input
@@ -349,6 +371,14 @@ const Homepage = () => {
           </div>
         )}
       </div>
+      <Button
+        onClick={() => { setSearchOpen(o => !o); if (searchOpen) setSearchQuery(""); }}
+        size="sm"
+        aria-label={searchOpen ? "Close search" : "Search posts"}
+        className="fixed bottom-[9.5rem] right-6 z-50 h-12 w-12 rounded-full p-0 shadow-lg"
+      >
+        {searchOpen ? <X className="h-5 w-5" /> : <Search className="h-5 w-5" />}
+      </Button>
       <FirstTimeGuide />
     </Layout>
   );
