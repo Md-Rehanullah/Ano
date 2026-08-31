@@ -9,8 +9,6 @@ import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown } from "lucide-react";
 import FloatingCreatePostButton from "@/components/FloatingCreatePostButton";
 import UserAvatar from "@/components/UserAvatar";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,8 +18,6 @@ interface LayoutProps { children: React.ReactNode; }
 const isNativeApp = (): boolean => {
   return !!(window as any).Capacitor?.isNativePlatform?.() || !!(window as any).Capacitor?.isPluginAvailable;
 };
-
-const CATEGORIES = ["General", "Technology", "Education", "Lifestyle", "Other"];
 
 const navItems = [
   { to: "/", label: "Home", icon: Home },
@@ -41,7 +37,6 @@ const Layout = ({ children }: LayoutProps) => {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [native, setNative] = useState(false);
-  const [allPostsOpen, setAllPostsOpen] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState<string | null>(null);
 
