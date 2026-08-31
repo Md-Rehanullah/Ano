@@ -9,8 +9,6 @@ import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown } from "lucide-react";
 import FloatingCreatePostButton from "@/components/FloatingCreatePostButton";
 import UserAvatar from "@/components/UserAvatar";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,11 +19,8 @@ const isNativeApp = (): boolean => {
   return !!(window as any).Capacitor?.isNativePlatform?.() || !!(window as any).Capacitor?.isPluginAvailable;
 };
 
-const CATEGORIES = ["General", "Technology", "Education", "Lifestyle", "Other"];
-
 const navItems = [
   { to: "/", label: "Home", icon: Home },
-  { to: "/all-posts", label: "All Posts", icon: FileText, hasSubItems: true },
   { to: "/bookmarks", label: "Bookmarks", icon: Bookmark },
   { to: "/about", label: "About", icon: Info },
   { to: "/contact", label: "Contact", icon: Mail },
@@ -42,7 +37,6 @@ const Layout = ({ children }: LayoutProps) => {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [native, setNative] = useState(false);
-  const [allPostsOpen, setAllPostsOpen] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState<string | null>(null);
 
@@ -74,37 +68,13 @@ const Layout = ({ children }: LayoutProps) => {
                   </SheetHeader>
                   <nav className="p-4 space-y-1 overflow-y-auto max-h-[calc(100vh-180px)]">
                     {navItems.map((item) => (
-                      item.hasSubItems ? (
-                        <Collapsible key={item.to} open={allPostsOpen} onOpenChange={setAllPostsOpen}>
-                          <div className="flex items-center">
-                            <Link to={item.to} onClick={() => setSidebarOpen(false)}
-                              className={cn("flex-1 flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-                                location.pathname === item.to ? "bg-sidebar-accent text-sidebar-primary" : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground")}>
-                              <item.icon className="h-4 w-4" /><span>{item.label}</span>
-                            </Link>
-                            <CollapsibleTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-sidebar-foreground/50">
-                                <ChevronDown className={cn("h-4 w-4 transition-transform", allPostsOpen && "rotate-180")} />
-                              </Button>
-                            </CollapsibleTrigger>
-                          </div>
-                          <CollapsibleContent className="pl-8 space-y-0.5 mt-0.5">
-                            {CATEGORIES.map(cat => (
-                              <Link key={cat} to={`/all-posts?category=${cat}`} onClick={() => setSidebarOpen(false)}
-                                className="block px-3 py-2 rounded-md text-xs font-medium text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors">
-                                {cat}
-                              </Link>
-                            ))}
-                          </CollapsibleContent>
-                        </Collapsible>
-                      ) : (
-                        <Link key={item.to} to={item.to} onClick={() => setSidebarOpen(false)}
-                          className={cn("flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-                            location.pathname === item.to ? "bg-sidebar-accent text-sidebar-primary" : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground")}>
-                          <item.icon className="h-4 w-4" /><span>{item.label}</span>
-                        </Link>
-                      )
+                      <Link key={item.to} to={item.to} onClick={() => setSidebarOpen(false)}
+                        className={cn("flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                          location.pathname === item.to ? "bg-sidebar-accent text-sidebar-primary" : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground")}>
+                        <item.icon className="h-4 w-4" /><span>{item.label}</span>
+                      </Link>
                     ))}
+
                     {isAdmin && (
                       <Link to="/admin" onClick={() => setSidebarOpen(false)}
                         className={cn("flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",

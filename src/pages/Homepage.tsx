@@ -1,12 +1,14 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
-import CreatePostForm from "@/components/CreatePostForm";
 import PostCard from "@/components/PostCard";
 import PostCardSkeleton from "@/components/PostCardSkeleton";
 import FirstTimeGuide from "@/components/FirstTimeGuide";
 import PullToRefresh from "@/components/PullToRefresh";
-import { Loader2 } from "lucide-react";
+import { Loader2, Search, X } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -17,7 +19,6 @@ import { saveFeedCache, loadFeedCache, isOnline } from "@/lib/offlineCache";
 import { getFeedSeed, rotateFeedSeed, FEED_PAGE_SIZE } from "@/lib/feedSession";
 import OfflineBanner from "@/components/OfflineBanner";
 import WeeklyLeaderboard from "@/components/WeeklyLeaderboard";
-import type { CreatePostPayload } from "@/components/CreatePostForm";
 
 
 interface Answer {
@@ -34,8 +35,21 @@ interface Post {
   authorUserId?: string | null; isSeed?: boolean;
 }
 
+const FEED_TABS = [
+  { key: "feed", label: "Your Feed" },
+  { key: "all", label: "All Posts" },
+  { key: "General", label: "General" },
+  { key: "Technology", label: "Technology" },
+  { key: "Education", label: "Education" },
+  { key: "Lifestyle", label: "Lifestyle" },
+  { key: "Other", label: "Other" },
+];
+
 const Homepage = () => {
   const [posts, setPosts] = useState<Post[]>([]);
+  const [tab, setTab] = useState<string>("feed");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -47,7 +61,7 @@ const Homepage = () => {
   const postIds = posts.map(p => p.id);
   const { interactions, setInteraction } = useUserInteractions(postIds);
 
-  useEffect(() => { fetchPosts(); }, []);
+  useEffect(() => { fetchPosts(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [tab]);
   useEffect(() => { if (user) fetchBookmarks(); }, [user]);
 
   // Optimistically prepend posts created via the floating action button (no reload).
@@ -121,6 +135,17 @@ const Homepage = () => {
   };
 
   const fetchPage = async (offset: number) => {
+    if (tab !== "feed") {
+      let query = supabase
+        .from("posts")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .range(offset, offset + FEED_PAGE_SIZE - 1);
+      if (tab !== "all") query = query.eq("category", tab);
+      const { data, error } = await query;
+      if (error) throw error;
+      return await hydratePosts((data as any[]) || []);
+    }
     const { data: { user: authUser } } = await supabase.auth.getUser();
     const { data, error } = await supabase.rpc('get_personalized_feed' as any, {
       p_user_id: authUser?.id ?? null,
@@ -147,6 +172,7 @@ const Homepage = () => {
     }
     try {
       setIsLoading(true);
+      setPosts([]);
       const mapped = await fetchPage(0);
       offsetRef.current = mapped.length;
       setHasMore(mapped.length === FEED_PAGE_SIZE);
@@ -174,7 +200,7 @@ const Homepage = () => {
     } catch {
       setHasMore(false);
     } finally { setIsLoadingMore(false); }
-  }, [isLoadingMore, hasMore]);
+  }, [isLoadingMore, hasMore, tab]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -189,39 +215,6 @@ const Homepage = () => {
     return () => observer.disconnect();
   }, [loadMore, hasMore, isLoadingMore, isLoading]);
 
-
-  const handleCreatePost = async (newPostData: CreatePostPayload) => {
-    if (!user) { navigate('/auth'); return; }
-    try {
-      const { data, error } = await supabase.from('posts').insert({
-        user_id: user.id, title: newPostData.title || null, description: newPostData.description,
-        category: newPostData.category, image_url: newPostData.imageUrl, video_url: newPostData.videoUrl
-      }).select().single();
-      if (error) throw error;
-
-      // Optionally attach a poll
-      if (newPostData.poll) {
-        const { data: pollRow, error: pollErr } = await supabase
-          .from('polls' as any)
-          .insert({ post_id: data.id, question: newPostData.poll.question })
-          .select('id')
-          .single();
-        if (!pollErr && pollRow) {
-          const optionsPayload = newPostData.poll.options.map((label, i) => ({
-            poll_id: (pollRow as any).id, label, position: i,
-          }));
-          await supabase.from('poll_options' as any).insert(optionsPayload);
-        }
-      }
-
-      const newPost: Post = {
-        id: data.id, title: data.title, description: data.description, category: data.category,
-        likes: data.likes, dislikes: data.dislikes, views: 0, imageUrl: data.image_url,
-        videoUrl: data.video_url, created_at: data.created_at, answers: []
-      };
-      setPosts(prev => [newPost, ...prev]);
-    } catch { toast({ title: "Error", description: "Failed to create post.", variant: "destructive" }); }
-  };
 
   const handleLike = async (postId: string) => {
     if (!user) { navigate('/auth'); return; }
@@ -279,23 +272,68 @@ const Homepage = () => {
   }, [user]);
 
 
+  const q = searchQuery.trim().toLowerCase();
+  const visiblePosts = q
+    ? posts.filter(p =>
+        (p.description || "").toLowerCase().includes(q) ||
+        (p.title || "").toLowerCase().includes(q) ||
+        (p.category || "").toLowerCase().includes(q) ||
+        (p.authorName || "").toLowerCase().includes(q))
+    : posts;
+
   return (
     <Layout>
       <OfflineBanner />
       <PullToRefresh onRefresh={handleRefresh} />
       <div className="container mx-auto px-4 py-6 max-w-4xl">
-        <CreatePostForm onCreatePost={handleCreatePost} />
+        <div className="flex items-center gap-2 mb-4">
+          <div className="flex-1 overflow-x-auto no-scrollbar">
+            <div className="flex items-center gap-1 w-max">
+              {FEED_TABS.map(t => (
+                <button
+                  key={t.key}
+                  onClick={() => setTab(t.key)}
+                  className={cn(
+                    "whitespace-nowrap px-3 py-1.5 text-sm font-medium rounded-full transition-colors border",
+                    tab === t.key
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-transparent text-muted-foreground border-transparent hover:bg-muted"
+                  )}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-9 w-9 shrink-0 rounded-full p-0"
+            aria-label={searchOpen ? "Close search" : "Search posts"}
+            onClick={() => { setSearchOpen(o => !o); if (searchOpen) setSearchQuery(""); }}
+          >
+            {searchOpen ? <X className="h-4 w-4" /> : <Search className="h-4 w-4" />}
+          </Button>
+        </div>
+        {searchOpen && (
+          <Input
+            autoFocus
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search posts, topics or people..."
+            className="mb-4"
+          />
+        )}
         <WeeklyLeaderboard />
-        <h2 className="text-lg font-semibold text-muted-foreground mb-4">Your Feed</h2>
         {isLoading ? (
           <div className="space-y-6">{[...Array(3)].map((_, i) => <PostCardSkeleton key={i} />)}</div>
-        ) : posts.length === 0 ? (
+        ) : visiblePosts.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
             <p className="text-lg">No posts yet. Be the first to share something!</p>
           </div>
         ) : (
           <div className="space-y-6">
-            {posts.map(post => (
+            {visiblePosts.map(post => (
               <PostCard key={post.id} post={post} onLike={handleLike} onReport={handleReport}
                 onAddAnswer={handleAddAnswer} onAnswerLike={handleAnswerLike} onBookmark={handleBookmark}
                 userInteraction={interactions[post.id] || null} isBookmarked={bookmarkedIds.has(post.id)}
