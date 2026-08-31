@@ -173,3 +173,12 @@
     transform: translateY(0);
   }
 }
+
+/* Horizontal feed tab strip: hide scrollbar but keep scrolling */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}

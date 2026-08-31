@@ -25,7 +25,6 @@ const CATEGORIES = ["General", "Technology", "Education", "Lifestyle", "Other"];
 
 const navItems = [
   { to: "/", label: "Home", icon: Home },
-  { to: "/all-posts", label: "All Posts", icon: FileText, hasSubItems: true },
   { to: "/bookmarks", label: "Bookmarks", icon: Bookmark },
   { to: "/about", label: "About", icon: Info },
   { to: "/contact", label: "Contact", icon: Mail },
