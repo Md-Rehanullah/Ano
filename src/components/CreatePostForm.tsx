@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { PlusCircle, Upload, X, Loader2, Video, ShieldAlert, BarChart3, Plus, Trash2 } from "lucide-react";
+import { PlusCircle, Upload, X, Loader2, Video, ShieldAlert, BarChart3, Plus, Trash2, Paperclip, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { checkLinkSafety, labelFor } from "@/lib/linkSafety";
@@ -18,6 +18,8 @@ export interface CreatePostPayload {
   category: string;
   imageUrl?: string;
   videoUrl?: string;
+  fileUrl?: string;
+  fileName?: string;
   poll?: { question: string; options: string[] };
 }
 
@@ -37,6 +39,8 @@ interface Draft {
   category: string;
   imageUrl: string;
   videoUrl: string;
+  fileUrl: string;
+  fileName: string;
   pollEnabled: boolean;
   pollQuestion: string;
   pollOptions: string[];
@@ -44,7 +48,7 @@ interface Draft {
 
 const emptyDraft: Draft = {
   content: "", category: "General",
-  imageUrl: "", videoUrl: "",
+  imageUrl: "", videoUrl: "", fileUrl: "", fileName: "",
   pollEnabled: false, pollQuestion: "", pollOptions: ["", ""],
 };
 
@@ -55,6 +59,7 @@ const CreatePostForm = ({ onCreatePost, forceOpen = false, onRequestClose }: Cre
   const [hasDraft, setHasDraft] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isUploadingVideo, setIsUploadingVideo] = useState(false);
+  const [isUploadingFile, setIsUploadingFile] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
   const { toast } = useToast();
   const saveTimer = useRef<number | null>(null);
@@ -76,7 +81,7 @@ const CreatePostForm = ({ onCreatePost, forceOpen = false, onRequestClose }: Cre
     if (!isOpen) return;
     if (saveTimer.current) window.clearTimeout(saveTimer.current);
     saveTimer.current = window.setTimeout(() => {
-      const isEmpty = !draft.content && !draft.imageUrl && !draft.videoUrl;
+      const isEmpty = !draft.content && !draft.imageUrl && !draft.videoUrl && !draft.fileUrl;
       if (isEmpty) localStorage.removeItem(DRAFT_KEY);
       else localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
     }, 600);
@@ -114,8 +119,10 @@ const CreatePostForm = ({ onCreatePost, forceOpen = false, onRequestClose }: Cre
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.type.startsWith('image/')) { toast({ title: "Invalid file type", variant: "destructive" }); return; }
-    if (file.size > 5 * 1024 * 1024) { toast({ title: "File too large", description: "Max 5MB.", variant: "destructive" }); return; }
+    if (!file.type.startsWith('image/')) { toast({ title: "Invalid file type", description: "Images and GIFs only.", variant: "destructive" }); return; }
+    const isGif = file.type === 'image/gif';
+    const imageLimit = isGif ? 15 * 1024 * 1024 : 5 * 1024 * 1024;
+    if (file.size > imageLimit) { toast({ title: "File too large", description: isGif ? "Max 15MB for GIFs." : "Max 5MB.", variant: "destructive" }); return; }
     setIsUploading(true);
     try {
       const { data: userData } = await supabase.auth.getUser();
@@ -128,7 +135,7 @@ const CreatePostForm = ({ onCreatePost, forceOpen = false, onRequestClose }: Cre
       const ok = await moderateMedia(publicUrl, filePath, "image");
       if (!ok) return;
       update("imageUrl", publicUrl);
-      toast({ title: "Image uploaded!" });
+      toast({ title: isGif ? "GIF uploaded!" : "Image uploaded!" });
     } catch { toast({ title: "Upload failed", variant: "destructive" }); }
     finally { setIsUploading(false); }
   };
@@ -153,6 +160,34 @@ const CreatePostForm = ({ onCreatePost, forceOpen = false, onRequestClose }: Cre
       toast({ title: "Video uploaded!" });
     } catch { toast({ title: "Upload failed", variant: "destructive" }); }
     finally { setIsUploadingVideo(false); }
+  };
+
+
+  const ALLOWED_DOC_EXT = ["pdf", "xml", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt", "csv", "json", "md", "zip"];
+
+  const handleDocumentUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const ext = (file.name.split('.').pop() || "").toLowerCase();
+    if (!ALLOWED_DOC_EXT.includes(ext)) {
+      toast({ title: "Unsupported file type", description: `Allowed: ${ALLOWED_DOC_EXT.join(", ")}.`, variant: "destructive" });
+      return;
+    }
+    if (file.size > 20 * 1024 * 1024) { toast({ title: "File too large", description: "Max 20MB.", variant: "destructive" }); return; }
+    setIsUploadingFile(true);
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      const uid = userData.user?.id;
+      if (!uid) { toast({ title: "Sign in first", variant: "destructive" }); setIsUploadingFile(false); return; }
+      const filePath = `${uid}/files/${crypto.randomUUID()}.${ext}`;
+      const { error } = await supabase.storage.from('post-images').upload(filePath, file, { contentType: file.type || undefined });
+      if (error) throw error;
+      const { data: { publicUrl } } = supabase.storage.from('post-images').getPublicUrl(filePath);
+      update("fileUrl", publicUrl);
+      update("fileName", file.name);
+      toast({ title: "File attached!" });
+    } catch { toast({ title: "Upload failed", variant: "destructive" }); }
+    finally { setIsUploadingFile(false); }
   };
 
 
@@ -195,6 +230,8 @@ const CreatePostForm = ({ onCreatePost, forceOpen = false, onRequestClose }: Cre
       category: draft.category,
       imageUrl: draft.imageUrl.trim() || undefined,
       videoUrl: draft.videoUrl.trim() || undefined,
+      fileUrl: draft.fileUrl.trim() || undefined,
+      fileName: draft.fileName.trim() || undefined,
       poll: pollPayload,
     });
     clearDraft();
@@ -252,13 +289,13 @@ const CreatePostForm = ({ onCreatePost, forceOpen = false, onRequestClose }: Cre
           </Select>
         </div>
         <div className="space-y-2">
-          <Label>Image (Optional)</Label>
+          <Label>Image / GIF (Optional)</Label>
           <div className="flex space-x-2">
-            <Input placeholder="Paste image URL or upload..." value={draft.imageUrl} onChange={(e) => update("imageUrl", e.target.value)} disabled={isUploading} />
+            <Input placeholder="Paste image or GIF URL, or upload..." value={draft.imageUrl} onChange={(e) => update("imageUrl", e.target.value)} disabled={isUploading} />
             <Button type="button" variant="outline" size="sm" className="px-3" disabled={isUploading} onClick={() => document.getElementById('file-upload')?.click()}>
               {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
             </Button>
-            <input id="file-upload" type="file" accept="image/*" className="hidden" onChange={handleFileUpload} />
+            <input id="file-upload" type="file" accept="image/*,image/gif,.gif" className="hidden" onChange={handleFileUpload} />
           </div>
           {draft.imageUrl && (
             <div className="mt-2 relative">
@@ -280,6 +317,37 @@ const CreatePostForm = ({ onCreatePost, forceOpen = false, onRequestClose }: Cre
             <div className="mt-2 relative">
               <video src={draft.videoUrl} className="max-w-full h-32 rounded-lg" controls />
               <Button type="button" variant="destructive" size="sm" className="absolute top-2 right-2" onClick={() => update("videoUrl", "")}><X className="h-3 w-3" /></Button>
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <Label>Attachment (Optional)</Label>
+          <div className="flex space-x-2">
+            <Input
+              placeholder="PDF, XML, DOC, XLS, TXT, ZIP..."
+              value={draft.fileName}
+              readOnly
+              disabled={isUploadingFile}
+            />
+            <Button type="button" variant="outline" size="sm" className="px-3" disabled={isUploadingFile}
+              onClick={() => document.getElementById('doc-upload')?.click()}>
+              {isUploadingFile ? <Loader2 className="h-4 w-4 animate-spin" /> : <Paperclip className="h-4 w-4" />}
+            </Button>
+            <input id="doc-upload" type="file" className="hidden"
+              accept=".pdf,.xml,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.json,.md,.zip"
+              onChange={handleDocumentUpload} />
+          </div>
+          {draft.fileUrl && (
+            <div className="mt-2 flex items-center justify-between rounded-lg border px-3 py-2">
+              <span className="flex items-center gap-2 text-sm truncate">
+                <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                <span className="truncate">{draft.fileName || "Attached file"}</span>
+              </span>
+              <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0"
+                onClick={() => { update("fileUrl", ""); update("fileName", ""); }}>
+                <X className="h-3 w-3" />
+              </Button>
             </div>
           )}
         </div>
