@@ -33,11 +33,22 @@ const RichTextEditor = ({ value, onChange, placeholder, minHeight = "120px", max
             ref={ref}
             value={value}
             onChange={(e) => onChange(e.target.value)}
+            onPaste={(e) => {
+              if (!onPasteFiles) return;
+              const files = Array.from(e.clipboardData?.files || []).filter(f => f.type.startsWith("image/"));
+              if (files.length) { e.preventDefault(); onPasteFiles(files); }
+            }}
+            onDrop={(e) => {
+              if (!onPasteFiles) return;
+              const files = Array.from(e.dataTransfer?.files || []).filter(f => f.type.startsWith("image/"));
+              if (files.length) { e.preventDefault(); onPasteFiles(files); }
+            }}
             placeholder={placeholder}
             className="resize-y font-mono text-sm"
             style={{ minHeight }}
             maxLength={maxLength}
           />
+
         </TabsContent>
         <TabsContent value="preview" className="mt-2">
           <div
