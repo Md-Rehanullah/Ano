@@ -19,7 +19,7 @@ interface Post {
   id: string; title: string; description: string; category: string;
   likes: number; dislikes: number; views: number; answers: Answer[];
   created_at: string; edited_at?: string | null; is_pinned?: boolean;
-  imageUrl?: string; videoUrl?: string;
+  imageUrl?: string; videoUrl?: string; fileUrl?: string | null; fileName?: string | null;
   authorName?: string; authorAvatar?: string;
   authorUserId?: string | null; isSeed?: boolean;
 }
