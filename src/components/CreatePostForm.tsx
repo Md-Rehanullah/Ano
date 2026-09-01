@@ -282,10 +282,14 @@ const CreatePostForm = ({ onCreatePost, forceOpen = false, onRequestClose }: Cre
             id="post-content"
             value={draft.content}
             onChange={(v) => update("content", v)}
-            placeholder="Share something, ask a question, post a puzzle… Markdown is supported."
+            placeholder="Share something, ask a question, post a puzzle… Markdown is supported. You can also paste a GIF from your keyboard."
             minHeight="180px"
             maxLength={10000}
+            onPasteFiles={(files) => { void uploadImageFile(files[0]); }}
           />
+          <p className="text-xs text-muted-foreground">
+            Tip: pick a GIF from your phone keyboard while typing — it gets attached to your post automatically.
+          </p>
         </div>
         <div className="space-y-2">
           <Label>Category</Label>
