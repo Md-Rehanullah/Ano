@@ -286,6 +286,22 @@ const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmar
           <VideoPlayer src={post.videoUrl} onClick={() => setLightboxOpen(true)} />
         )}
 
+        {/* Attachment */}
+        {post.fileUrl && (
+          <a
+            href={post.fileUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            download={post.fileName || undefined}
+            onClick={(e) => e.stopPropagation()}
+            className="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
+          >
+            <Paperclip className="h-4 w-4 text-muted-foreground shrink-0" />
+            <span className="truncate">{post.fileName || "Attachment"}</span>
+            <Download className="h-4 w-4 ml-auto text-muted-foreground shrink-0" />
+          </a>
+        )}
+
         {/* Lightbox with download/share/report */}
         {mediaType && (
           <MediaLightbox
