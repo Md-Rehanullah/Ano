@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Heart, Share2, Flag, MessageCircle, Eye, Bookmark, BookmarkCheck, Pin, Pencil, MoreVertical, UserX } from "lucide-react";
+import { Heart, Share2, Flag, MessageCircle, Eye, Bookmark, BookmarkCheck, Pin, Pencil, MoreVertical, UserX, Paperclip, Download } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { formatCount, hapticTap } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
