@@ -262,15 +262,23 @@ const ProfileSettings = ({ userId, email, displayName, avatarUrl, bannerUrl, bio
   const updateBanner = async (newValue: string | null) => {
     setIsSavingBanner(true);
     try {
-      const { error } = await supabase.from("profiles")
-        .upsert({ user_id: userId, banner_url: newValue } as any, { onConflict: "user_id" });
+      // The profile row always exists here, so a plain UPDATE avoids upsert/RLS pitfalls.
+      const { data, error } = await supabase.from("profiles")
+        .update({ banner_url: newValue } as any)
+        .eq("user_id", userId)
+        .select("user_id");
       if (error) throw error;
+      if (!data || data.length === 0) {
+        const { error: insErr } = await supabase.from("profiles")
+          .insert({ user_id: userId, banner_url: newValue } as any);
+        if (insErr) throw insErr;
+      }
       setBannerPreview(newValue);
       onUpdate();
       toast({ title: "Banner updated" });
-    } catch (e) {
+    } catch (e: any) {
       console.error("Banner save error", e);
-      toast({ title: "Error", description: "Failed to update banner.", variant: "destructive" });
+      toast({ title: "Error", description: e?.message || "Failed to update banner.", variant: "destructive" });
     } finally {
       setIsSavingBanner(false);
     }
@@ -289,19 +297,21 @@ const ProfileSettings = ({ userId, email, displayName, avatarUrl, bannerUrl, bio
     }
     setIsUploadingBanner(true);
     try {
-      const ext = file.name.split(".").pop() || "jpg";
-      const fileName = `${userId}/banner.${ext}`;
-      const { error: upErr } = await supabase.storage.from("banners").upload(fileName, file, { upsert: true });
+      const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+      // Unique path per upload: avoids upsert/update-policy issues and CDN caching.
+      const filePath = `${userId}/banner-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("banners")
+        .upload(filePath, file, { contentType: file.type || undefined, upsert: false });
       if (upErr) throw upErr;
-      const { data: { publicUrl } } = supabase.storage.from("banners").getPublicUrl(fileName);
+      const { data: { publicUrl } } = supabase.storage.from("banners").getPublicUrl(filePath);
       const { moderateUploadedMedia } = await import("@/lib/mediaModeration");
-      const mod = await moderateUploadedMedia({ bucket: "banners", filePath: fileName, publicUrl, kind: "image" });
+      const mod = await moderateUploadedMedia({ bucket: "banners", filePath, publicUrl, kind: "image" });
       if (!mod.allowed) { toast({ title: "Banner blocked", description: mod.reason, variant: "destructive" }); return; }
-      const url = `${publicUrl}?t=${Date.now()}`;
-      await updateBanner(url);
-    } catch (err) {
+      await updateBanner(publicUrl);
+    } catch (err: any) {
       console.error("Banner upload error", err);
-      toast({ title: "Upload failed", description: "Please try again.", variant: "destructive" });
+      toast({ title: "Upload failed", description: err?.message || "Please try again.", variant: "destructive" });
     } finally {
       setIsUploadingBanner(false);
       if (bannerInputRef.current) bannerInputRef.current.value = "";

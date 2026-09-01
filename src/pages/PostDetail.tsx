@@ -19,7 +19,7 @@ interface Post {
   id: string; title: string; description: string; category: string;
   likes: number; dislikes: number; views: number; answers: Answer[];
   created_at: string; edited_at?: string | null; is_pinned?: boolean;
-  imageUrl?: string; videoUrl?: string;
+  imageUrl?: string; videoUrl?: string; fileUrl?: string | null; fileName?: string | null;
   authorName?: string; authorAvatar?: string;
   authorUserId?: string | null; isSeed?: boolean;
 }
@@ -53,6 +53,7 @@ const PostDetail = () => {
       id: data.id, title: data.title, description: data.description, category: data.category,
       likes: data.likes, dislikes: data.dislikes, views: (data.views || 0) + 1,
       imageUrl: data.image_url, videoUrl: data.video_url, created_at: data.created_at,
+      fileUrl: (data as any).file_url ?? null, fileName: (data as any).file_name ?? null,
       edited_at: data.edited_at, is_pinned: data.is_pinned,
       authorName: pmap[data.user_id]?.display_name || data.seed_author_name || null,
       authorAvatar: pmap[data.user_id]?.avatar_url || null,

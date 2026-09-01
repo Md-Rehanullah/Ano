@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Heart, Share2, Flag, MessageCircle, Eye, Bookmark, BookmarkCheck, Pin, Pencil, MoreVertical, UserX } from "lucide-react";
+import { Heart, Share2, Flag, MessageCircle, Eye, Bookmark, BookmarkCheck, Pin, Pencil, MoreVertical, UserX, Paperclip, Download } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { formatCount, hapticTap } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -47,6 +47,8 @@ interface Post {
   is_pinned?: boolean;
   imageUrl?: string;
   videoUrl?: string;
+  fileUrl?: string | null;
+  fileName?: string | null;
   authorName?: string;
   authorAvatar?: string;
   authorUserId?: string | null;
@@ -282,6 +284,22 @@ const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmar
         )}
         {post.videoUrl && (
           <VideoPlayer src={post.videoUrl} onClick={() => setLightboxOpen(true)} />
+        )}
+
+        {/* Attachment */}
+        {post.fileUrl && (
+          <a
+            href={post.fileUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            download={post.fileName || undefined}
+            onClick={(e) => e.stopPropagation()}
+            className="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
+          >
+            <Paperclip className="h-4 w-4 text-muted-foreground shrink-0" />
+            <span className="truncate">{post.fileName || "Attachment"}</span>
+            <Download className="h-4 w-4 ml-auto text-muted-foreground shrink-0" />
+          </a>
         )}
 
         {/* Lightbox with download/share/report */}

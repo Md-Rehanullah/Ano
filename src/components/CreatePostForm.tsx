@@ -116,9 +116,7 @@ const CreatePostForm = ({ onCreatePost, forceOpen = false, onRequestClose }: Cre
     return true;
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const uploadImageFile = async (file: File) => {
     if (!file.type.startsWith('image/')) { toast({ title: "Invalid file type", description: "Images and GIFs only.", variant: "destructive" }); return; }
     const isGif = file.type === 'image/gif';
     const imageLimit = isGif ? 15 * 1024 * 1024 : 5 * 1024 * 1024;
@@ -128,16 +126,24 @@ const CreatePostForm = ({ onCreatePost, forceOpen = false, onRequestClose }: Cre
       const { data: userData } = await supabase.auth.getUser();
       const uid = userData.user?.id;
       if (!uid) { toast({ title: "Sign in first", variant: "destructive" }); setIsUploading(false); return; }
-      const filePath = `${uid}/${crypto.randomUUID()}.${file.name.split('.').pop()}`;
-      const { error } = await supabase.storage.from('post-images').upload(filePath, file);
+      const ext = (file.name.split('.').pop() || (isGif ? 'gif' : 'png')).toLowerCase();
+      const filePath = `${uid}/${crypto.randomUUID()}.${ext}`;
+      const { error } = await supabase.storage.from('post-images').upload(filePath, file, { contentType: file.type || undefined });
       if (error) throw error;
       const { data: { publicUrl } } = supabase.storage.from('post-images').getPublicUrl(filePath);
       const ok = await moderateMedia(publicUrl, filePath, "image");
       if (!ok) return;
       update("imageUrl", publicUrl);
-      toast({ title: isGif ? "GIF uploaded!" : "Image uploaded!" });
+      toast({ title: isGif ? "GIF added!" : "Image added!" });
     } catch { toast({ title: "Upload failed", variant: "destructive" }); }
     finally { setIsUploading(false); }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await uploadImageFile(file);
+    e.target.value = "";
   };
 
   const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -276,10 +282,14 @@ const CreatePostForm = ({ onCreatePost, forceOpen = false, onRequestClose }: Cre
             id="post-content"
             value={draft.content}
             onChange={(v) => update("content", v)}
-            placeholder="Share something, ask a question, post a puzzle… Markdown is supported."
+            placeholder="Share something, ask a question, post a puzzle… Markdown is supported. You can also paste a GIF from your keyboard."
             minHeight="180px"
             maxLength={10000}
+            onPasteFiles={(files) => { void uploadImageFile(files[0]); }}
           />
+          <p className="text-xs text-muted-foreground">
+            Tip: pick a GIF from your phone keyboard while typing — it gets attached to your post automatically.
+          </p>
         </div>
         <div className="space-y-2">
           <Label>Category</Label>
