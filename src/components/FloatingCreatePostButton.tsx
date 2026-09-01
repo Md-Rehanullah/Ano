@@ -33,6 +33,8 @@ const FloatingCreatePostButton = ({ onCreatePost }: Props) => {
         category: newPost.category,
         image_url: newPost.imageUrl,
         video_url: newPost.videoUrl,
+        file_url: newPost.fileUrl ?? null,
+        file_name: newPost.fileName ?? null,
       }).select().single();
       if (error) throw error;
 
