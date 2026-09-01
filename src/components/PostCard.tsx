@@ -47,6 +47,8 @@ interface Post {
   is_pinned?: boolean;
   imageUrl?: string;
   videoUrl?: string;
+  fileUrl?: string | null;
+  fileName?: string | null;
   authorName?: string;
   authorAvatar?: string;
   authorUserId?: string | null;
