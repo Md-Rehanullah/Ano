@@ -11,9 +11,11 @@ interface Props {
   minHeight?: string;
   maxLength?: number;
   id?: string;
+  /** Called with image/GIF files pasted (e.g. from the mobile keyboard GIF picker) or dropped. */
+  onPasteFiles?: (files: File[]) => void;
 }
 
-const RichTextEditor = ({ value, onChange, placeholder, minHeight = "120px", maxLength, id }: Props) => {
+const RichTextEditor = ({ value, onChange, placeholder, minHeight = "120px", maxLength, id, onPasteFiles }: Props) => {
   const ref = useRef<HTMLTextAreaElement>(null);
   const [tab, setTab] = useState<"write" | "preview">("write");
 
