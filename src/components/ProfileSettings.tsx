@@ -262,15 +262,23 @@ const ProfileSettings = ({ userId, email, displayName, avatarUrl, bannerUrl, bio
   const updateBanner = async (newValue: string | null) => {
     setIsSavingBanner(true);
     try {
-      const { error } = await supabase.from("profiles")
-        .upsert({ user_id: userId, banner_url: newValue } as any, { onConflict: "user_id" });
+      // The profile row always exists here, so a plain UPDATE avoids upsert/RLS pitfalls.
+      const { data, error } = await supabase.from("profiles")
+        .update({ banner_url: newValue } as any)
+        .eq("user_id", userId)
+        .select("user_id");
       if (error) throw error;
+      if (!data || data.length === 0) {
+        const { error: insErr } = await supabase.from("profiles")
+          .insert({ user_id: userId, banner_url: newValue } as any);
+        if (insErr) throw insErr;
+      }
       setBannerPreview(newValue);
       onUpdate();
       toast({ title: "Banner updated" });
-    } catch (e) {
+    } catch (e: any) {
       console.error("Banner save error", e);
-      toast({ title: "Error", description: "Failed to update banner.", variant: "destructive" });
+      toast({ title: "Error", description: e?.message || "Failed to update banner.", variant: "destructive" });
     } finally {
       setIsSavingBanner(false);
     }
