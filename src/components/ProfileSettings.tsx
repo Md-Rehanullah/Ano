@@ -289,19 +289,21 @@ const ProfileSettings = ({ userId, email, displayName, avatarUrl, bannerUrl, bio
     }
     setIsUploadingBanner(true);
     try {
-      const ext = file.name.split(".").pop() || "jpg";
-      const fileName = `${userId}/banner.${ext}`;
-      const { error: upErr } = await supabase.storage.from("banners").upload(fileName, file, { upsert: true });
+      const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+      // Unique path per upload: avoids upsert/update-policy issues and CDN caching.
+      const filePath = `${userId}/banner-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("banners")
+        .upload(filePath, file, { contentType: file.type || undefined, upsert: false });
       if (upErr) throw upErr;
-      const { data: { publicUrl } } = supabase.storage.from("banners").getPublicUrl(fileName);
+      const { data: { publicUrl } } = supabase.storage.from("banners").getPublicUrl(filePath);
       const { moderateUploadedMedia } = await import("@/lib/mediaModeration");
-      const mod = await moderateUploadedMedia({ bucket: "banners", filePath: fileName, publicUrl, kind: "image" });
+      const mod = await moderateUploadedMedia({ bucket: "banners", filePath, publicUrl, kind: "image" });
       if (!mod.allowed) { toast({ title: "Banner blocked", description: mod.reason, variant: "destructive" }); return; }
-      const url = `${publicUrl}?t=${Date.now()}`;
-      await updateBanner(url);
-    } catch (err) {
+      await updateBanner(publicUrl);
+    } catch (err: any) {
       console.error("Banner upload error", err);
-      toast({ title: "Upload failed", description: "Please try again.", variant: "destructive" });
+      toast({ title: "Upload failed", description: err?.message || "Please try again.", variant: "destructive" });
     } finally {
       setIsUploadingBanner(false);
       if (bannerInputRef.current) bannerInputRef.current.value = "";
