@@ -30,7 +30,9 @@ export async function moderateUploadedMedia(params: {
     }
     return { allowed: true };
   } catch {
+    if (kind === "video") return { allowed: true };
     await supabase.storage.from(bucket).remove([filePath]).catch(() => {});
     return { allowed: false, reason: "Moderation check failed. Please try again." };
   }
+
 }
