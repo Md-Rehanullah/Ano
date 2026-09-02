@@ -94,19 +94,31 @@ Deno.serve(async (req) => {
       return json({ allowed: reasons.length === 0, reasons, kind, raw: data });
     }
 
-    // Video: synchronous frame-by-frame check (returns aggregated frames)
+    // Video: synchronous frame-by-frame check. Videos fail OPEN — if Sightengine
+    // is unreachable, times out, or the plan does not cover video, we allow the
+    // upload instead of blocking normal footage.
     const params = new URLSearchParams({
       stream_url: mediaUrl, models: VIDEO_MODELS, api_user: apiUser, api_secret: apiSecret,
     });
-    const res = await fetch(`https://api.sightengine.com/1.0/video/check-sync.json?${params}`);
-    const data = await res.json();
-    if (data.status !== "success") return json({ error: "Sightengine error", raw: data }, 502);
+    let data: any;
+    try {
+      const res = await fetch(`https://api.sightengine.com/1.0/video/check-sync.json?${params}`, {
+        signal: AbortSignal.timeout(45_000),
+      });
+      data = await res.json();
+    } catch (_e) {
+      return json({ allowed: true, reasons: [], kind, degraded: true });
+    }
+    if (data?.status !== "success") {
+      return json({ allowed: true, reasons: [], kind, degraded: true, raw: data });
+    }
 
     const frames: Frame[] = data.data?.frames ?? [];
     const reasonsSet = new Set<string>();
-    for (const f of frames) for (const r of evaluateFrame(f)) reasonsSet.add(r);
+    for (const f of frames) for (const r of evaluateFrame(f, true)) reasonsSet.add(r);
     const reasons = Array.from(reasonsSet);
     return json({ allowed: reasons.length === 0, reasons, kind, raw: data });
+
   } catch (e) {
     return json({ error: String(e) }, 500);
   }
