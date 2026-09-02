@@ -58,8 +58,13 @@ const Contact = () => {
         user_id: user?.id ?? null,
       });
       if (error) throw error;
+      const { error: mailError } = await supabase.functions.invoke("send-contact-email", {
+        body: parsed.data,
+      });
+      if (mailError) console.error("Contact email delivery failed:", mailError);
       toast({ title: "Message sent!", description: "Thanks — we received your message and will get back to you soon." });
       setName(""); setEmail(""); setSubject(""); setMessage("");
+
     } catch (err) {
       console.error("Contact submit failed:", err);
       toast({ title: "Could not send", description: "Please try again in a moment.", variant: "destructive" });

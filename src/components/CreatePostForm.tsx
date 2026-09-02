@@ -102,7 +102,8 @@ const CreatePostForm = ({ onCreatePost, forceOpen = false, onRequestClose }: Cre
       body: { mediaUrl: publicUrl, kind },
     });
     if (error) {
-      // Fail closed: delete the just-uploaded file
+      // Videos fail open (scanning long files is unreliable); images fail closed.
+      if (kind === "video") return true;
       await supabase.storage.from("post-images").remove([filePath]);
       toast({ title: "Moderation check failed", description: "Please try again.", variant: "destructive" });
       return false;
@@ -115,6 +116,7 @@ const CreatePostForm = ({ onCreatePost, forceOpen = false, onRequestClose }: Cre
     }
     return true;
   };
+
 
   const uploadImageFile = async (file: File) => {
     if (!file.type.startsWith('image/')) { toast({ title: "Invalid file type", description: "Images and GIFs only.", variant: "destructive" }); return; }
@@ -282,14 +284,11 @@ const CreatePostForm = ({ onCreatePost, forceOpen = false, onRequestClose }: Cre
             id="post-content"
             value={draft.content}
             onChange={(v) => update("content", v)}
-            placeholder="Share something, ask a question, post a puzzle… Markdown is supported. You can also paste a GIF from your keyboard."
+            placeholder="Share something, ask a question, post a puzzle… Markdown is supported."
             minHeight="180px"
             maxLength={10000}
             onPasteFiles={(files) => { void uploadImageFile(files[0]); }}
           />
-          <p className="text-xs text-muted-foreground">
-            Tip: pick a GIF from your phone keyboard while typing — it gets attached to your post automatically.
-          </p>
         </div>
         <div className="space-y-2">
           <Label>Category</Label>
@@ -299,14 +298,15 @@ const CreatePostForm = ({ onCreatePost, forceOpen = false, onRequestClose }: Cre
           </Select>
         </div>
         <div className="space-y-2">
-          <Label>Image / GIF (Optional)</Label>
+          <Label>Image (Optional)</Label>
           <div className="flex space-x-2">
-            <Input placeholder="Paste image or GIF URL, or upload..." value={draft.imageUrl} onChange={(e) => update("imageUrl", e.target.value)} disabled={isUploading} />
+            <Input placeholder="Paste image URL, or upload..." value={draft.imageUrl} onChange={(e) => update("imageUrl", e.target.value)} disabled={isUploading} />
             <Button type="button" variant="outline" size="sm" className="px-3" disabled={isUploading} onClick={() => document.getElementById('file-upload')?.click()}>
               {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
             </Button>
-            <input id="file-upload" type="file" accept="image/*,image/gif,.gif" className="hidden" onChange={handleFileUpload} />
+            <input id="file-upload" type="file" accept="image/*" className="hidden" onChange={handleFileUpload} />
           </div>
+
           {draft.imageUrl && (
             <div className="mt-2 relative">
               <img src={draft.imageUrl} alt="Preview" className="max-w-full h-32 object-cover rounded-lg" onError={() => { toast({ title: "Invalid image", variant: "destructive" }); update("imageUrl", ""); }} />
