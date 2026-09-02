@@ -28,7 +28,7 @@ const PostDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [post, setPost] = useState<Post | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -69,7 +69,10 @@ const PostDetail = () => {
     setLoading(false);
   }, [id]);
 
-  useEffect(() => { fetchPost(); }, [fetchPost]);
+  useEffect(() => {
+    if (authLoading) return;
+    fetchPost();
+  }, [fetchPost, authLoading, user?.id]);
   useEffect(() => {
     if (!user || !id) return;
     supabase.from('bookmarks').select('post_id').eq('user_id', user.id).eq('post_id', id).maybeSingle()

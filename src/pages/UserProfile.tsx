@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
 import KarmaBadges from "@/components/KarmaBadges";
 import type { KarmaStats } from "@/lib/badges";
+import { useAuth } from "@/hooks/useAuth";
 
 interface ProfileData {
   display_name: string | null;
@@ -29,6 +30,7 @@ type AccessState = "loading" | "visible" | "own" | "private" | "blocked" | "not_
 const UserProfile = () => {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [posts, setPosts] = useState<PostItem[]>([]);
   const [answers, setAnswers] = useState<AnswerItem[]>([]);
@@ -38,6 +40,7 @@ const UserProfile = () => {
 
   useEffect(() => {
     if (!userId) return;
+    if (authLoading) return;
     (async () => {
       setLoading(true);
       // 1) Resolve what the viewer is allowed to see
@@ -93,7 +96,7 @@ const UserProfile = () => {
 
       setLoading(false);
     })();
-  }, [userId]);
+  }, [userId, authLoading, user?.id]);
 
   if (access === "private" || access === "blocked" || access === "not_found") {
     const isBlocked = access === "blocked";
@@ -113,7 +116,7 @@ const UserProfile = () => {
                 ? "You and this user have blocked each other. Their profile and activity are hidden."
                 : isMissing
                 ? "We couldn't find this user."
-                : "The owner has set their profile to private. Their personal details are hidden, but their public posts are still visible in the feed."}
+                : "The owner has set their profile to private. Their profile and posts are hidden."}
             </p>
             <Button onClick={() => navigate(-1)}>Go back</Button>
           </Card>
