@@ -17,9 +17,12 @@ export async function moderateUploadedMedia(params: {
       body: { mediaUrl: publicUrl, kind },
     });
     if (error) {
+      // Videos fail open — long-video scanning is unreliable and would block normal footage.
+      if (kind === "video") return { allowed: true };
       await supabase.storage.from(bucket).remove([filePath]);
       return { allowed: false, reason: "Moderation check failed. Please try again." };
     }
+
     if (!data?.allowed) {
       await supabase.storage.from(bucket).remove([filePath]);
       const reasons = (data?.reasons ?? []).join(", ") || "unsafe content";
