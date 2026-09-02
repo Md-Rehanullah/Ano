@@ -152,7 +152,7 @@ const CreatePostForm = ({ onCreatePost, forceOpen = false, onRequestClose }: Cre
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith('video/')) { toast({ title: "Invalid file type", variant: "destructive" }); return; }
-    if (file.size > 50 * 1024 * 1024) { toast({ title: "File too large", description: "Max 50MB.", variant: "destructive" }); return; }
+    if (file.size > 200 * 1024 * 1024) { toast({ title: "File too large", description: "Max 200MB.", variant: "destructive" }); return; }
     setIsUploadingVideo(true);
     try {
       const { data: userData } = await supabase.auth.getUser();
