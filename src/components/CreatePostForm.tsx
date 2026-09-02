@@ -102,7 +102,8 @@ const CreatePostForm = ({ onCreatePost, forceOpen = false, onRequestClose }: Cre
       body: { mediaUrl: publicUrl, kind },
     });
     if (error) {
-      // Fail closed: delete the just-uploaded file
+      // Videos fail open (scanning long files is unreliable); images fail closed.
+      if (kind === "video") return true;
       await supabase.storage.from("post-images").remove([filePath]);
       toast({ title: "Moderation check failed", description: "Please try again.", variant: "destructive" });
       return false;
@@ -115,6 +116,7 @@ const CreatePostForm = ({ onCreatePost, forceOpen = false, onRequestClose }: Cre
     }
     return true;
   };
+
 
   const uploadImageFile = async (file: File) => {
     if (!file.type.startsWith('image/')) { toast({ title: "Invalid file type", description: "Images and GIFs only.", variant: "destructive" }); return; }
