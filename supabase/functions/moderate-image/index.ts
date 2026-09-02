@@ -16,22 +16,24 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
 const IMAGE_MODELS = "nudity-2.1,weapon,recreational_drug,offensive,gore,face-attributes";
-// Video sync endpoint supports a subset — same model names work.
-const VIDEO_MODELS = "nudity-2.1,weapon,recreational_drug,offensive,gore";
+// Videos are only checked for nudity and gore (extreme violence).
+const VIDEO_MODELS = "nudity-2.1,gore";
 
 type Frame = Record<string, any>;
 
-function evaluateFrame(data: Frame): string[] {
+function evaluateFrame(data: Frame, videoOnly = false): string[] {
   const reasons: string[] = [];
   const nudity = data.nudity ?? {};
   if ((nudity.sexual_activity ?? 0) > 0.5) reasons.push("sexual_activity");
   if ((nudity.sexual_display ?? 0) > 0.5) reasons.push("sexual_display");
   if ((nudity.erotica ?? 0) > 0.6) reasons.push("erotica");
-  if ((nudity.very_suggestive ?? 0) > 0.75) reasons.push("very_suggestive");
-  if ((data.weapon?.classes?.firearm ?? 0) > 0.5) reasons.push("weapon");
-  if ((data.recreational_drug?.prob ?? 0) > 0.6) reasons.push("drugs");
-  if ((data.gore?.prob ?? 0) > 0.5) reasons.push("gore");
-  if ((data.offensive?.prob ?? 0) > 0.6) reasons.push("offensive");
+  if (!videoOnly && (nudity.very_suggestive ?? 0) > 0.75) reasons.push("very_suggestive");
+  if ((data.gore?.prob ?? 0) > (videoOnly ? 0.75 : 0.5)) reasons.push("gore");
+  if (!videoOnly) {
+    if ((data.weapon?.classes?.firearm ?? 0) > 0.5) reasons.push("weapon");
+    if ((data.recreational_drug?.prob ?? 0) > 0.6) reasons.push("drugs");
+    if ((data.offensive?.prob ?? 0) > 0.6) reasons.push("offensive");
+  }
   const faces = data["face-attributes"]?.faces ?? [];
   const sexualScore =
     (nudity.sexual_activity ?? 0) + (nudity.sexual_display ?? 0) + (nudity.erotica ?? 0);
@@ -44,6 +46,7 @@ function evaluateFrame(data: Frame): string[] {
   }
   return reasons;
 }
+
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
