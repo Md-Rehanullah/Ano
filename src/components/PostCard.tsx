@@ -19,6 +19,7 @@ import PollBlock from "@/components/PollBlock";
 import { checkProfanity } from "@/lib/profanity";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { clearFeedCache } from "@/lib/offlineCache";
 
 interface Answer {
   id: string;
@@ -118,6 +119,7 @@ const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmar
     const { error } = await supabase.from('user_blocks' as any).insert({ blocker_id: user.id, blocked_id: post.authorUserId });
     if (error) { toast({ title: "Couldn't block", description: error.message, variant: "destructive" }); return; }
     setHidden(true);
+    clearFeedCache();
     toast({ title: "User blocked" });
     window.dispatchEvent(new CustomEvent("bridge:user-blocked", { detail: { userId: post.authorUserId } }));
   };

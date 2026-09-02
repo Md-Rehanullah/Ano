@@ -38,13 +38,27 @@ const AllPosts = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(initialCategory);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const postIds = posts.map(p => p.id);
   const { interactions, setInteraction } = useUserInteractions(postIds);
 
-  useEffect(() => { fetchPosts(); }, []);
+  useEffect(() => {
+    if (authLoading) return;
+    fetchPosts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading, user?.id]);
   useEffect(() => { if (user) fetchBookmarks(); }, [user]);
+
+  useEffect(() => {
+    const onUserBlocked = (e: Event) => {
+      const blockedUserId = (e as CustomEvent).detail?.userId as string | undefined;
+      if (!blockedUserId) return;
+      setPosts(prev => prev.filter(p => p.authorUserId !== blockedUserId));
+    };
+    window.addEventListener("bridge:user-blocked", onUserBlocked as EventListener);
+    return () => window.removeEventListener("bridge:user-blocked", onUserBlocked as EventListener);
+  }, []);
 
   useEffect(() => {
     let result = posts;

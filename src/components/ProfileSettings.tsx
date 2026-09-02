@@ -10,6 +10,7 @@ import { Camera, User, Loader2, Mail, Trash2, AlertTriangle, MapPin, Twitter, In
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { clearFeedCache } from "@/lib/offlineCache";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
@@ -93,7 +94,10 @@ const ProfileSettings = ({ userId, email, displayName, avatarUrl, bannerUrl, bio
     setIsPrivate(next);
     const { error } = await supabase.from("profiles").upsert({ user_id: userId, is_private: next } as any, { onConflict: "user_id" });
     if (error) { setIsPrivate(!next); toast({ title: "Couldn't save", description: error.message, variant: "destructive" }); }
-    else toast({ title: next ? "Account is now private" : "Account is now public" });
+    else {
+      clearFeedCache();
+      toast({ title: next ? "Account is now private" : "Account is now public" });
+    }
     setSavingPrivacy(false);
   };
 
@@ -101,6 +105,7 @@ const ProfileSettings = ({ userId, email, displayName, avatarUrl, bannerUrl, bio
     const { error } = await supabase.from("user_blocks" as any).delete().eq("id", id);
     if (error) { toast({ title: "Couldn't unblock", variant: "destructive" }); return; }
     setBlocked(b => b.filter(x => x.id !== id));
+    clearFeedCache();
     toast({ title: "Unblocked" });
   };
 

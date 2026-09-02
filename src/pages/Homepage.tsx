@@ -55,13 +55,17 @@ const Homepage = () => {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   const navigate = useNavigate();
   const postIds = posts.map(p => p.id);
   const { interactions, setInteraction } = useUserInteractions(postIds);
 
-  useEffect(() => { fetchPosts(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [tab]);
+  useEffect(() => {
+    if (authLoading) return;
+    fetchPosts();
+    /* eslint-disable-next-line react-hooks/exhaustive-deps */
+  }, [tab, authLoading, user?.id]);
   useEffect(() => { if (user) fetchBookmarks(); }, [user]);
 
   // Optimistically prepend posts created via the floating action button (no reload).
@@ -80,6 +84,20 @@ const Homepage = () => {
     };
     window.addEventListener("bridge:new-post", onNewPost as EventListener);
     return () => window.removeEventListener("bridge:new-post", onNewPost as EventListener);
+  }, []);
+
+  useEffect(() => {
+    const onUserBlocked = (e: Event) => {
+      const blockedUserId = (e as CustomEvent).detail?.userId as string | undefined;
+      if (!blockedUserId) return;
+      setPosts(prev => {
+        const filtered = prev.filter(p => p.authorUserId !== blockedUserId);
+        saveFeedCache(filtered as any);
+        return filtered;
+      });
+    };
+    window.addEventListener("bridge:user-blocked", onUserBlocked as EventListener);
+    return () => window.removeEventListener("bridge:user-blocked", onUserBlocked as EventListener);
   }, []);
 
   const fetchBookmarks = async () => {
@@ -148,9 +166,8 @@ const Homepage = () => {
       if (error) throw error;
       return await hydratePosts((data as any[]) || []);
     }
-    const { data: { user: authUser } } = await supabase.auth.getUser();
     const { data, error } = await supabase.rpc('get_personalized_feed' as any, {
-      p_user_id: authUser?.id ?? null,
+      p_user_id: user?.id ?? null,
       p_seed: seedRef.current,
       p_limit: FEED_PAGE_SIZE,
       p_offset: offset,
@@ -159,7 +176,7 @@ const Homepage = () => {
     const rows = (data as any[]) || [];
     const mapped = await hydratePosts(rows);
     // Remember what we showed so the ranker can rotate content next session.
-    if (authUser && rows.length) {
+    if (user && rows.length) {
       supabase.rpc('record_feed_impressions' as any, { p_post_ids: rows.map(r => r.id) }).then();
     }
     return mapped;
@@ -202,7 +219,7 @@ const Homepage = () => {
     } catch {
       setHasMore(false);
     } finally { setIsLoadingMore(false); }
-  }, [isLoadingMore, hasMore, tab]);
+  }, [isLoadingMore, hasMore, tab, user]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
