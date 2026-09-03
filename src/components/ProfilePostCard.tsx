@@ -28,8 +28,9 @@ const ProfilePostCard = ({ post, onEdit, onDelete }: ProfilePostCardProps) => (
             </span>
           </div>
           <div className="bg-muted/30 rounded-lg p-3 mb-3">
-            <p className="text-foreground/90">{post.description}</p>
+            <MarkdownContent>{post.description}</MarkdownContent>
           </div>
+
           <Badge variant="secondary" className="text-xs">{post.category}</Badge>
         </div>
       </div>
