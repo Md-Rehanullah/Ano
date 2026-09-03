@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ThumbsUp, MessageCircle, Edit, Trash2, Eye } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import MarkdownContent from "@/components/MarkdownContent";
+
 
 interface Answer {
   id: string; content: string; likes: number; dislikes: number; replies: Answer[]; created_at: string;
@@ -28,8 +30,9 @@ const ProfilePostCard = ({ post, onEdit, onDelete }: ProfilePostCardProps) => (
             </span>
           </div>
           <div className="bg-muted/30 rounded-lg p-3 mb-3">
-            <p className="text-foreground/90">{post.description}</p>
+            <MarkdownContent>{post.description}</MarkdownContent>
           </div>
+
           <Badge variant="secondary" className="text-xs">{post.category}</Badge>
         </div>
       </div>

@@ -204,11 +204,18 @@ const CreatePostForm = ({ onCreatePost, forceOpen = false, onRequestClose }: Cre
     e.preventDefault();
     if (!draft.content.trim()) { toast({ title: "Write something first", variant: "destructive" }); return; }
 
+    const insecure = draft.content.match(/\bhttp:\/\/[^\s)]+/i);
+    if (insecure) {
+      toast({ title: "Insecure link", description: `Only https links are allowed. Please fix: ${insecure[0]}`, variant: "destructive" });
+      return;
+    }
+
     const profanityCheck = checkProfanity(`${draft.content}\n${draft.pollQuestion}\n${draft.pollOptions.join("\n")}`);
     if (!profanityCheck.ok) {
       toast({ title: "Inappropriate language detected", description: `Please remove profane content (matched: "${profanityCheck.match}").`, variant: "destructive" });
       return;
     }
+
 
     let pollPayload: { question: string; options: string[] } | undefined;
     if (draft.pollEnabled) {
@@ -285,7 +292,7 @@ const CreatePostForm = ({ onCreatePost, forceOpen = false, onRequestClose }: Cre
             id="post-content"
             value={draft.content}
             onChange={(v) => update("content", v)}
-            placeholder="Share something, ask a question, post a puzzle… Markdown is supported."
+            placeholder="Share something, ask a question, post a puzzle…"
             minHeight="180px"
             maxLength={10000}
             onPasteFiles={(files) => { void uploadImageFile(files[0]); }}

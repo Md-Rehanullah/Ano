@@ -38,13 +38,21 @@ const MarkdownContent = ({ children, className }: Props) => {
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
-          a: ({ node, ...props }) => (
-            <a {...props} target="_blank" rel="noopener noreferrer nofollow" />
-          ),
+          a: ({ node, href, children, ...props }) => {
+            // Only secure links are clickable; anything else renders as text.
+            const safe = typeof href === "string" && /^https:\/\//i.test(href);
+            if (!safe) return <span>{children}</span>;
+            return (
+              <a {...props} href={href} target="_blank" rel="noopener noreferrer nofollow">
+                {children}
+              </a>
+            );
+          },
         }}
       >
         {children}
       </ReactMarkdown>
+
     </div>
   );
 };
