@@ -292,7 +292,7 @@ const CreatePostForm = ({ onCreatePost, forceOpen = false, onRequestClose }: Cre
             id="post-content"
             value={draft.content}
             onChange={(v) => update("content", v)}
-            placeholder="Share something, ask a question, post a puzzle… Markdown is supported."
+            placeholder="Share something, ask a question, post a puzzle…"
             minHeight="180px"
             maxLength={10000}
             onPasteFiles={(files) => { void uploadImageFile(files[0]); }}
