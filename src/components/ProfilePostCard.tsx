@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ThumbsUp, MessageCircle, Edit, Trash2, Eye } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import MarkdownContent from "@/components/MarkdownContent";
+
 
 interface Answer {
   id: string; content: string; likes: number; dislikes: number; replies: Answer[]; created_at: string;
