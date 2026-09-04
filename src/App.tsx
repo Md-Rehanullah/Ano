@@ -49,6 +49,8 @@ const App = () => (
               <Route path="/contact" element={<Contact />} />
               <Route path="/collaborate" element={<Collaborate />} />
               <Route path="/privacy" element={<PrivacyPolicy />} />
+              <Route path="/child-safety" element={<ChildSafety />} />
+
               <Route path="/terms" element={<Terms />} />
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/auth" element={<Auth />} />
