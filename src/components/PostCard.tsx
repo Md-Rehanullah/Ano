@@ -20,6 +20,7 @@ import { checkProfanity } from "@/lib/profanity";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { clearFeedCache } from "@/lib/offlineCache";
+import { resolveAttachmentUrl, isPrivateAttachment } from "@/lib/attachments";
 
 interface Answer {
   id: string;
