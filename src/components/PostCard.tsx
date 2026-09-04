@@ -288,21 +288,53 @@ const PostCard = ({ post, onLike, onReport, onAddAnswer, onAnswerLike, onBookmar
           <VideoPlayer src={post.videoUrl} onClick={() => setLightboxOpen(true)} />
         )}
 
-        {/* Attachment */}
-        {post.fileUrl && (
-          <a
-            href={post.fileUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            download={post.fileName || undefined}
-            onClick={(e) => e.stopPropagation()}
-            className="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
-          >
-            <Paperclip className="h-4 w-4 text-muted-foreground shrink-0" />
-            <span className="truncate">{post.fileName || "Attachment"}</span>
-            <Download className="h-4 w-4 ml-auto text-muted-foreground shrink-0" />
-          </a>
-        )}
+       {post.fileUrl && (
+  <button
+    type="button"
+    onClick={async (e) => {
+      e.stopPropagation();
+
+      if (!user) {
+        navigate("/auth");
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase.functions.invoke(
+          "download-attachment",
+          {
+            body: {
+              fileRef: post.fileUrl,
+            },
+          }
+        );
+
+        if (error) throw error;
+
+        if (!data?.signedUrl) {
+          throw new Error("Could not create attachment link.");
+        }
+
+        window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+      } catch (error: any) {
+        console.error("Attachment download failed:", error);
+        toast({
+          title: "Download failed",
+          description:
+            error?.message || "Could not open this attachment.",
+          variant: "destructive",
+        });
+      }
+    }}
+    className="flex w-full items-center gap-2 rounded-lg border px-3 py-2 text-sm hover:bg-muted/50 transition-colors text-left"
+  >
+    <Paperclip className="h-4 w-4 text-muted-foreground shrink-0" />
+    <span className="truncate">
+      {post.fileName || "Attachment"}
+    </span>
+    <Download className="h-4 w-4 ml-auto text-muted-foreground shrink-0" />
+  </button>
+)}
 
         {/* Lightbox with download/share/report */}
         {mediaType && (
