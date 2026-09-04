@@ -16,6 +16,7 @@ import Auth from "./pages/Auth";
 
 import ResetPassword from "./pages/ResetPassword";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+import ChildSafety from "./pages/ChildSafety";
 import Terms from "./pages/Terms";
 import AdminDashboard from "./pages/AdminDashboard";
 import UserProfile, { PrivateProfile } from "./pages/UserProfile";
