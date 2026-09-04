@@ -152,11 +152,14 @@ Deno.serve(async (req) => {
       if (local) issues.push(local);
     }
 
-    const apiKey = Deno.env.get('GOOGLE_SAFE_BROWSING_API_KEY');
-    if (apiKey) {
-      const sbIssues = await safeBrowsingCheck(urls, apiKey);
-      issues.push(...sbIssues);
+   const apiKey = Deno.env.get('GOOGLE_SAFE_BROWSING_API_KEY');
+
+   if (!apiKey) {
+      throw new Error('Safe Browsing API key is not configured');
     }
+
+const sbIssues = await safeBrowsingCheck(urls, apiKey);
+issues.push(...sbIssues);
 
     const blocked = issues.filter(i => i.severity === 'block');
     return new Response(
