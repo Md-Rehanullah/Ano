@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { checkLinkSafety, labelFor } from "@/lib/linkSafety";
 import { checkProfanity } from "@/lib/profanity";
 import RichTextEditor from "@/components/RichTextEditor";
+import { validateDocument, PRIVATE_FILE_PREFIX } from "@/lib/attachments";
 
 export interface CreatePostPayload {
   title: string;
@@ -172,31 +173,64 @@ const CreatePostForm = ({ onCreatePost, forceOpen = false, onRequestClose }: Cre
   };
 
 
-  const ALLOWED_DOC_EXT = ["pdf", "xml", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt", "csv", "json", "md", "zip"];
-
-  const handleDocumentUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+   const handleDocumentUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const ext = (file.name.split('.').pop() || "").toLowerCase();
-    if (!ALLOWED_DOC_EXT.includes(ext)) {
-      toast({ title: "Unsupported file type", description: `Allowed: ${ALLOWED_DOC_EXT.join(", ")}.`, variant: "destructive" });
+
+    const validation = validateDocument(file);
+
+    if (!validation.ok) {
+      toast({
+        title: "Invalid document",
+        description: validation.error,
+        variant: "destructive",
+      });
+      e.target.value = "";
       return;
     }
-    if (file.size > 20 * 1024 * 1024) { toast({ title: "File too large", description: "Max 20MB.", variant: "destructive" }); return; }
+
     setIsUploadingFile(true);
+
     try {
       const { data: userData } = await supabase.auth.getUser();
       const uid = userData.user?.id;
-      if (!uid) { toast({ title: "Sign in first", variant: "destructive" }); setIsUploadingFile(false); return; }
-      const filePath = `${uid}/files/${crypto.randomUUID()}.${ext}`;
-      const { error } = await supabase.storage.from('post-images').upload(filePath, file, { contentType: file.type || undefined });
+
+      if (!uid) {
+        toast({
+          title: "Sign in first",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const filePath = `${uid}/files/${crypto.randomUUID()}.${validation.ext}`;
+
+      const { error } = await supabase.storage
+        .from("post-files")
+        .upload(filePath, file, {
+          contentType: file.type || undefined,
+          upsert: false,
+        });
+
       if (error) throw error;
-      const { data: { publicUrl } } = supabase.storage.from('post-images').getPublicUrl(filePath);
-      update("fileUrl", publicUrl);
+
+      update("fileUrl", `${PRIVATE_FILE_PREFIX}${filePath}`);
       update("fileName", file.name);
-      toast({ title: "File attached!" });
-    } catch { toast({ title: "Upload failed", variant: "destructive" }); }
-    finally { setIsUploadingFile(false); }
+
+      toast({
+        title: "Attachment added!",
+      });
+    } catch (error: any) {
+      console.error("Document upload failed:", error);
+      toast({
+        title: "Upload failed",
+        description: error?.message || "Could not upload the document.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploadingFile(false);
+      e.target.value = "";
+    }
   };
 
 
