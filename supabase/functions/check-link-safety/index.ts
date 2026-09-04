@@ -52,40 +52,57 @@ const localCheck = (url: string): Issue | null => {
   }
 };
 
-const safeBrowsingCheck = async (urls: string[], apiKey: string): Promise<Issue[]> => {
+const safeBrowsingCheck = async (
+  urls: string[],
+  apiKey: string
+): Promise<Issue[]> => {
   if (urls.length === 0) return [];
-  try {
-    const resp = await fetch(
-      `https://safebrowsing.googleapis.com/v4/threatMatches:find?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          client: { clientId: 'bridge-app', clientVersion: '1.0.0' },
-          threatInfo: {
-            threatTypes: ['MALWARE', 'SOCIAL_ENGINEERING', 'UNWANTED_SOFTWARE', 'POTENTIALLY_HARMFUL_APPLICATION'],
-            platformTypes: ['ANY_PLATFORM'],
-            threatEntryTypes: ['URL'],
-            threatEntries: urls.map(url => ({ url })),
-          },
-        }),
-      }
-    );
-    if (!resp.ok) {
-      console.warn('Safe Browsing API error', resp.status, await resp.text());
-      return [];
+
+  const resp = await fetch(
+    `https://safebrowsing.googleapis.com/v4/threatMatches:find?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        client: {
+          clientId: 'bridge-app',
+          clientVersion: '1.0.0',
+        },
+        threatInfo: {
+          threatTypes: [
+            'MALWARE',
+            'SOCIAL_ENGINEERING',
+            'UNWANTED_SOFTWARE',
+            'POTENTIALLY_HARMFUL_APPLICATION',
+          ],
+          platformTypes: ['ANY_PLATFORM'],
+          threatEntryTypes: ['URL'],
+          threatEntries: urls.map(url => ({ url })),
+        },
+      }),
     }
-    const data = await resp.json();
-    const matches = data.matches || [];
-    return matches.map((m: any) => ({
-      url: m.threat?.url ?? '',
-      reason: 'malware',
-      severity: 'block' as const,
-    }));
-  } catch (e) {
-    console.error('Safe Browsing request failed', e);
-    return [];
+  );
+
+  if (!resp.ok) {
+    const body = await resp.text();
+    console.error(
+      'Safe Browsing API error',
+      resp.status,
+      body
+    );
+    throw new Error(
+      `Safe Browsing API unavailable (${resp.status})`
+    );
   }
+
+  const data = await resp.json();
+  const matches = data.matches || [];
+
+  return matches.map((m: any) => ({
+    url: m.threat?.url ?? '',
+    reason: 'malware',
+    severity: 'block' as const,
+  }));
 };
 
 Deno.serve(async (req) => {
