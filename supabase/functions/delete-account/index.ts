@@ -123,7 +123,7 @@ Deno.serve(async (req) => {
     if (postsErr) failures.push(`posts: ${postsErr.message}`);
 
     // 3) Storage: avatars, banners and post media owned by the user.
-    for (const bucket of ["avatars", "banners", "post-images"]) {
+   for (const bucket of ["avatars", "banners", "post-images", "post-files"]) {
       for (const prefix of [userId, `${userId}/videos`, `${userId}/files`]) {
         const { data: files } = await admin.storage.from(bucket).list(prefix, { limit: 1000 });
         const paths = (files ?? [])
