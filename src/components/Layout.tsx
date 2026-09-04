@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Moon, Sun, LogIn, LogOut, User, Menu, ArrowUp, Home, FileText, Info, Mail, Users, Download, Bookmark, Shield, LayoutDashboard, Smartphone } from "lucide-react";
+import { Moon, Sun, LogIn, LogOut, User, Menu, ArrowUp, Home, FileText, Info, Mail, Users, Download, Bookmark, Shield, ShieldAlert, LayoutDashboard, Smartphone } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
