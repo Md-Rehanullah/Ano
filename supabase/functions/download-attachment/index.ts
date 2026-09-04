@@ -118,11 +118,7 @@ Deno.serve(async (req) => {
 
     const ownerId = pathParts[0];
 
-    if (ownerId !== user.id) {
-      // The owner ID is intentionally not treated as sufficient authorization.
-      // The post lookup below determines whether this authenticated user
-      // is actually allowed to access the attachment.
-    }
+    
 
     const { data: post, error: postError } = await admin
       .from("posts")
@@ -157,6 +153,19 @@ Deno.serve(async (req) => {
         }
       );
     }
+
+    if (post.user_id !== ownerId) {
+  return new Response(
+    JSON.stringify({ error: "Attachment is not available." }),
+    {
+      status: 403,
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "application/json",
+      },
+    }
+  );
+}
 
     const isOwner = post.user_id === user.id;
 
