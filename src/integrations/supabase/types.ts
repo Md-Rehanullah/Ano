@@ -514,6 +514,7 @@ export type Database = {
       }
       reports: {
         Row: {
+          answer_id: string | null
           created_at: string
           id: string
           post_id: string
@@ -523,6 +524,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          answer_id?: string | null
           created_at?: string
           id?: string
           post_id: string
@@ -532,6 +534,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          answer_id?: string | null
           created_at?: string
           id?: string
           post_id?: string
@@ -541,6 +544,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "reports_answer_id_fkey"
+            columns: ["answer_id"]
+            isOneToOne: false
+            referencedRelation: "answers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "reports_post_id_fkey"
             columns: ["post_id"]
