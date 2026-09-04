@@ -188,13 +188,13 @@ Deno.serve(async (req) => {
       }
 
       if (post.user_id) {
-        const { data: blocked, error: blockedError } = await admin.rpc(
-          "is_blocked_with",
-          {
-            p_viewer: user.id,
-            p_other: post.user_id,
-          }
-        );
+const { data: blocked, error: blockedError } = await admin.rpc(
+  "is_blocked_with",
+  {
+    _viewer: user.id,
+    _other: post.user_id,
+  }
+);
 
         if (blockedError) {
           console.error("Failed to verify block status:", blockedError);
@@ -225,9 +225,9 @@ Deno.serve(async (req) => {
         }
 
         const { data: privateProfile, error: privateProfileError } =
-          await admin.rpc("is_profile_private", {
-            p_user_id: post.user_id,
-          });
+  await admin.rpc("is_profile_private", {
+    _uid: post.user_id,
+  });
 
         if (privateProfileError) {
           console.error(
